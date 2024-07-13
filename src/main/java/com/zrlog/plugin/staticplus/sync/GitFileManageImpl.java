@@ -31,6 +31,7 @@ public class GitFileManageImpl implements FileManage {
     private static final Logger LOGGER = LoggerUtil.getLogger(GitFileManageImpl.class);
 
     private static final Lock lock = new ReentrantLock();
+    private static final Lock createLock = new ReentrantLock();
 
     private final GitRemoteInfo gitRemoteInfo;
     private final List<UploadFile> syncFiles;
@@ -157,9 +158,7 @@ public class GitFileManageImpl implements FileManage {
                 FileUtils.moveOrCopyFile(e.getFile().toString(), new File(repoDir + "/" + e.getFileKey()).toString(), false);
             }
 
-            File file = new File(repoDir + "/git-build.json");
-            String jsonStr = new Gson().toJson(Map.of("buildDate", System.currentTimeMillis()));
-            IOUtil.writeStrToFile(jsonStr, file);
+
             git.add().addFilepattern(".").call();
             git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
             git.push()
@@ -167,11 +166,8 @@ public class GitFileManageImpl implements FileManage {
                     .setRemote("origin")
                     .setRefSpecs(new RefSpec(gitRemoteInfo.getBranch() + ":" + gitRemoteInfo.getBranch()))
                     .call();
-            if (Objects.isNull(gitRemoteInfo.getAccessBaseUrl()) || gitRemoteInfo.getAccessBaseUrl().isEmpty()) {
-                LOGGER.info("Git push success");
-                return true;
-            }
-            return SyncUtils.checkFileSyncs(gitRemoteInfo.getAccessBaseUrl() + "/" + file.getName(), jsonStr);
+            LOGGER.info("Git push success");
+            return true;
         } catch (Exception e) {
             e.printStackTrace();
             LoggerUtil.getLogger(GitFileManageImpl.class).warning("Git [sync] push error " + e.getMessage());
@@ -184,32 +180,41 @@ public class GitFileManageImpl implements FileManage {
 
     public static void main(String[] args) throws Exception {
         RunConstants.runType = RunType.DEV;
-        List<UploadFile> list = new ArrayList<>();
         UploadFile uploadFile = new UploadFile();
         File testFile = File.createTempFile("test", "");
         IOUtil.writeBytesToFile(("Test content " + testFile.toURI()).getBytes(), testFile);
         uploadFile.setFile(testFile);
         uploadFile.setFileKey(System.currentTimeMillis() + ".tmp");
         uploadFile.setRefresh(true);
-        list.add(uploadFile);
-        try (GitFileManageImpl gitFileManage = new GitFileManageImpl(IOUtil.getStringInputStream(GitFileManageImpl.class.getResourceAsStream("/test-git-remove-info.json")), list)) {
-            gitFileManage.doSync();
+        try (GitFileManageImpl gitFileManage = new GitFileManageImpl(IOUtil.getStringInputStream(GitFileManageImpl.class.getResourceAsStream("/test-git-remove-info.json")), new ArrayList<>())) {
+            gitFileManage.create(testFile, uploadFile.getFileKey(), true, true);
         }
     }
 
     @Override
     public String create(File file, String key, boolean deleteRepeat, boolean supportHttps) throws Exception {
-        List<UploadFile> fileList = new ArrayList<>();
-        UploadFile uploadFile = new UploadFile();
-        uploadFile.setFile(file);
-        uploadFile.setFileKey(key);
-        uploadFile.setRefresh(false);
-        fileList.add(uploadFile);
-        doSyncByUploadFiles(fileList);
-        if (gitRemoteInfo.getAccessBaseUrl().endsWith("/")) {
-            return gitRemoteInfo.getAccessBaseUrl() + key;
+        createLock.lock();
+        try {
+            List<UploadFile> fileList = new ArrayList<>();
+            UploadFile uploadFile = new UploadFile();
+            uploadFile.setFile(file);
+            uploadFile.setFileKey(key);
+            uploadFile.setRefresh(false);
+            fileList.add(uploadFile);
+            File buildFile = new File(repoDir + "/git-build.json");
+            String jsonStr = new Gson().toJson(Map.of("buildDate", System.currentTimeMillis()));
+            IOUtil.writeStrToFile(jsonStr, buildFile);
+            doSyncByUploadFiles(fileList);
+            if (Objects.nonNull(gitRemoteInfo.getAccessBaseUrl()) && !gitRemoteInfo.getAccessBaseUrl().isEmpty()) {
+                SyncUtils.checkFileSyncs(gitRemoteInfo.getAccessBaseUrl() + "/" + buildFile.getName(), jsonStr);
+            }
+            if (gitRemoteInfo.getAccessBaseUrl().endsWith("/")) {
+                return gitRemoteInfo.getAccessBaseUrl() + key;
+            }
+            return gitRemoteInfo.getAccessBaseUrl() + "/" + key;
+        } finally {
+            createLock.unlock();
         }
-        return gitRemoteInfo.getAccessBaseUrl() + "/" + key;
     }
 
     @Override
