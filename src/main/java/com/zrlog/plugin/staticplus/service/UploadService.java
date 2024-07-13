@@ -60,26 +60,38 @@ public class UploadService implements IPluginService {
         return uploadFileList;
     }
 
+    private UploadFileResponse convertByUploadFileList(List<UploadFile> uploadFileList) {
+        UploadFileResponse uploadFileResponse = new UploadFileResponse();
+        uploadFileList.forEach(e -> {
+            UploadFileResponseEntry responseEntry = new UploadFileResponseEntry();
+            responseEntry.setUrl(e.getFileKey());
+            uploadFileResponse.add(responseEntry);
+        });
+        return uploadFileResponse;
+    }
+
     public UploadFileResponse upload(IOSession session, final List<UploadFile> uploadFileList) {
         final UploadFileResponse response = new UploadFileResponse();
-        long startTime = System.currentTimeMillis();
         if (uploadFileList == null || uploadFileList.isEmpty()) {
             return response;
         }
-
+        long startTime = System.currentTimeMillis();
         Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, Map.of("key", "syncRemoteType"), ActionType.GET_WEBSITE, Map.class);
         if (Objects.isNull(responseMap.get("syncRemoteType"))) {
-            return new UploadFileResponse();
+            return convertByUploadFileList(uploadFileList);
         }
         String syncType = responseMap.get("syncRemoteType");
         Map<String, String> configMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, Map.of("key", syncType), ActionType.GET_WEBSITE, Map.class);
-
+        String gitConfig = configMap.get(syncType);
+        if (Objects.isNull(gitConfig) || gitConfig.trim().isEmpty()) {
+            return convertByUploadFileList(uploadFileList);
+        }
         FileManage bucketManageAPI = null;
         if (Objects.equals("git", responseMap.get("syncRemoteType"))) {
             bucketManageAPI = new GitFileManageImpl(configMap.get(syncType), new ArrayList<>());
         }
         if (Objects.isNull(bucketManageAPI)) {
-            return new UploadFileResponse();
+            return convertByUploadFileList(uploadFileList);
         }
         try {
             for (UploadFile uploadFile : uploadFileList) {
