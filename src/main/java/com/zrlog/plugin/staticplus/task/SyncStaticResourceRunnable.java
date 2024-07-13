@@ -45,14 +45,6 @@ public class SyncStaticResourceRunnable implements Runnable {
         return getUploadFiles(cacheFolder, cacheFolder);
     }
 
-    private List<UploadFile> attachedFiles(BlogRunTime blogRunTime, Map<String, String> responseMap) {
-        if (!"on".equals(responseMap.get("syncAttached"))) {
-            return new ArrayList<>();
-        }
-        String attachedFolder = new File(blogRunTime.getPath()).getParent() + "/static/attached/";
-        return getUploadFiles(attachedFolder, blogRunTime.getPath());
-    }
-
     private List<UploadFile> getUploadFiles(String cacheFolder, String startPath) {
         File cacheFile = new File(cacheFolder);
         List<UploadFile> uploadFiles = new ArrayList<>();
@@ -112,7 +104,7 @@ public class SyncStaticResourceRunnable implements Runnable {
         reentrantLock.lock();
         try {
             Map<String, Object> map = new HashMap<>();
-            map.put("key", "syncTemplate,syncHtml,syncAttached,syncRemoteType," + cacheKeyMapKey);
+            map.put("key", "syncTemplate,syncHtml,syncRemoteType," + cacheKeyMapKey);
             Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, map, ActionType.GET_WEBSITE, Map.class);
             //reload cache
             preloadCache(responseMap);
@@ -121,8 +113,6 @@ public class SyncStaticResourceRunnable implements Runnable {
             List<UploadFile> uploadFiles = new ArrayList<>();
             uploadFiles.addAll(templateUploadFiles(blogRunTime, responseMap, templatePath));
             uploadFiles.addAll(cacheFiles(blogRunTime, responseMap));
-            uploadFiles.addAll(attachedFiles(blogRunTime, responseMap));
-            uploadFiles.addAll(configFiles(blogRunTime));
             if (uploadFiles.isEmpty()) {
                 return;
             }
@@ -167,17 +157,6 @@ public class SyncStaticResourceRunnable implements Runnable {
             }
         }
         return fileList;
-    }
-
-    private List<UploadFile> configFiles(BlogRunTime blogRunTime) {
-        List<File> fileList = new ArrayList<>();
-        File faviconIco = new File(blogRunTime.getPath() + "/favicon.ico");
-        if (faviconIco.exists()) {
-            fileList.add(faviconIco);
-        }
-        List<UploadFile> uploadFiles = new ArrayList<>();
-        fillToUploadFiles(fileList, blogRunTime.getPath(), uploadFiles);
-        return uploadFiles;
     }
 
     private void fillToUploadFiles(List<File> files, String startPath, List<UploadFile> uploadFiles) {
