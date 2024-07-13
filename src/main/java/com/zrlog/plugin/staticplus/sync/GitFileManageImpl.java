@@ -201,8 +201,8 @@ public class GitFileManageImpl implements FileManage {
             uploadFile.setFileKey(key);
             uploadFile.setRefresh(false);
             fileList.add(uploadFile);
-            File buildFile = new File(repoDir + "/git-build.json");
-            String jsonStr = new Gson().toJson(Map.of("buildDate", System.currentTimeMillis()));
+            File buildFile = new File(repoDir + "/create-file-info.json");
+            String jsonStr = new Gson().toJson(Map.of("uploadDate", System.currentTimeMillis()));
             IOUtil.writeStrToFile(jsonStr, buildFile);
             doSyncByUploadFiles(fileList);
             if (Objects.nonNull(gitRemoteInfo.getAccessBaseUrl()) && !gitRemoteInfo.getAccessBaseUrl().isEmpty()) {
