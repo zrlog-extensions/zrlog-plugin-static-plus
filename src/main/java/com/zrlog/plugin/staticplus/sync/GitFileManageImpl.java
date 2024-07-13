@@ -156,10 +156,13 @@ public class GitFileManageImpl implements FileManage {
             git.remoteAdd().setName("origin");
             for (UploadFile e : files) {
                 FileUtils.moveOrCopyFile(e.getFile().toString(), new File(repoDir + "/" + e.getFileKey()).toString(), false);
+                if(e.getFileKey().startsWith("/")) {
+                    git.add().addFilepattern(e.getFileKey().substring(1)).call();
+                }else {
+                    git.add().addFilepattern(e.getFileKey()).call();
+                }
             }
 
-
-            git.add().addFilepattern(".").call();
             git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
             git.push()
                     .setCredentialsProvider(usernamePasswordCredentialsProvider)
