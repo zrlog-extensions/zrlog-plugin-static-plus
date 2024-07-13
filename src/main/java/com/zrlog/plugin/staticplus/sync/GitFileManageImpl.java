@@ -154,6 +154,7 @@ public class GitFileManageImpl implements FileManage {
                 LoggerUtil.getLogger(GitFileManageImpl.class).warning("Git [sync] pull error " + e.getMessage());
             }
             git.remoteAdd().setName("origin");
+            long start = System.currentTimeMillis();
             for (UploadFile e : files) {
                 FileUtils.moveOrCopyFile(e.getFile().toString(), new File(repoDir + "/" + e.getFileKey()).toString(), false);
                 if(e.getFileKey().startsWith("/")) {
@@ -162,6 +163,7 @@ public class GitFileManageImpl implements FileManage {
                     git.add().addFilepattern(e.getFileKey()).call();
                 }
             }
+            LOGGER.info("Git add used time " + (System.currentTimeMillis() - start) + "ms");
 
             git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
             git.push()
