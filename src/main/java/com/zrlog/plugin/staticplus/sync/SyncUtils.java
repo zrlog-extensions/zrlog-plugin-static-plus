@@ -15,7 +15,7 @@ public class SyncUtils {
 
     public static boolean checkFileSyncs(String checkUrl, String expectContent) {
         try (HttpClient httpClient = HttpClient.newBuilder().build()) {
-            for (int i = 0; i < 20; i++) {
+            for (int i = 0; i < 40; i++) {
                 String gitBuildJson = checkUrl + "?_" + System.currentTimeMillis();
                 HttpRequest httpRequest = HttpRequest.newBuilder()
                         .header("User-Agent", "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36")
