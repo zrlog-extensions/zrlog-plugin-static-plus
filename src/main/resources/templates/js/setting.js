@@ -8,9 +8,6 @@ $(function () {
     if(e.syncHtml === 'on'){
         document.getElementById("syncHtml").setAttribute('checked',"checked");
     }
-    if(e.syncAttached === 'on'){
-        document.getElementById("syncAttached").setAttribute('checked',"checked");
-    }
 
     new Vue({
         el: '#vue-div',
