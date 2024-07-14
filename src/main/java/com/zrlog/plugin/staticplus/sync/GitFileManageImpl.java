@@ -113,8 +113,12 @@ public class GitFileManageImpl implements FileManage {
             @Override
             public List<Proxy> select(URI uri) {
                 if ("https".equalsIgnoreCase(uri.getScheme()) || "http".equalsIgnoreCase(uri.getScheme())) {
-                    // 仅对 Git 操作生效
+                    // 对 Git 操作生效
                     if (Objects.equals(URI.create(gitRemoteInfo.getUrl()).getHost(), uri.getHost())) {
+                        return List.of(proxy);
+                    }
+                    // 对访问 url 生效
+                    if (Objects.nonNull(gitRemoteInfo.getAccessBaseUrl()) && Objects.equals(URI.create(gitRemoteInfo.getAccessBaseUrl()).getHost(), uri.getHost())) {
                         return List.of(proxy);
                     }
                 }
@@ -157,9 +161,9 @@ public class GitFileManageImpl implements FileManage {
             long start = System.currentTimeMillis();
             for (UploadFile e : files) {
                 FileUtils.moveOrCopyFile(e.getFile().toString(), new File(repoDir + "/" + e.getFileKey()).toString(), false);
-                if(e.getFileKey().startsWith("/")) {
+                if (e.getFileKey().startsWith("/")) {
                     git.add().addFilepattern(e.getFileKey().substring(1)).call();
-                }else {
+                } else {
                     git.add().addFilepattern(e.getFileKey()).call();
                 }
             }
