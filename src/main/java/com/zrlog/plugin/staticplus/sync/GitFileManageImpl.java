@@ -170,6 +170,7 @@ public class GitFileManageImpl implements FileManage {
                     git.add().addFilepattern(e.getFileKey()).call();
                 }
             }
+            git.add().addFilepattern(".").call();
             LOGGER.info("Git add used time " + (System.currentTimeMillis() - start) + "ms");
 
             git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
