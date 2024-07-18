@@ -17,10 +17,9 @@ public class ConnectHandler implements IConnectHandler {
 
     private SyncStaticResourceRunnable syncStaticResourceRunnable;
 
-
     public void handler(IOSession ioSession, MsgPacket msgPacket) {
         this.syncStaticResourceRunnable = new SyncStaticResourceRunnable(ioSession);
-        executorService.scheduleAtFixedRate(syncStaticResourceRunnable, 0, 1, RunConstants.runType == RunType.BLOG ? TimeUnit.SECONDS : TimeUnit.HOURS);
+        executorService.scheduleAtFixedRate(syncStaticResourceRunnable, 0, 1, RunConstants.runType == RunType.BLOG ? TimeUnit.MINUTES : TimeUnit.HOURS);
     }
 
     public SyncStaticResourceRunnable getSyncStaticResourceRunnable() {

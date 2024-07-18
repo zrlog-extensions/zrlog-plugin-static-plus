@@ -82,6 +82,9 @@ public class UploadService implements IPluginService {
         }
         String syncType = responseMap.get("syncRemoteType");
         Map<String, String> configMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, Map.of("key", syncType), ActionType.GET_WEBSITE, Map.class);
+        if (Objects.isNull(configMap)) {
+            return convertByUploadFileList(uploadFileList);
+        }
         String gitConfig = configMap.get(syncType);
         if (Objects.isNull(gitConfig) || gitConfig.trim().isEmpty()) {
             return convertByUploadFileList(uploadFileList);

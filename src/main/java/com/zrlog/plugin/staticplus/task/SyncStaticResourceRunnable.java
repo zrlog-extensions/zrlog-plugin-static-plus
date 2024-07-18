@@ -19,6 +19,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -32,6 +33,8 @@ public class SyncStaticResourceRunnable implements Runnable {
     private final Map<String, Object> fileInfoCacheMap = new TreeMap<>();
     private final String cacheKeyMapKey = "cacheMap";
     private final ReentrantLock reentrantLock = new ReentrantLock();
+    private final AtomicLong version = new AtomicLong();
+
 
     public SyncStaticResourceRunnable(IOSession session) {
         this.session = session;
@@ -101,8 +104,12 @@ public class SyncStaticResourceRunnable implements Runnable {
 
     @Override
     public void run() {
+        long expectVersion = version.incrementAndGet();
         reentrantLock.lock();
         try {
+            if (!Objects.equals(version.get(), expectVersion)) {
+                return;
+            }
             Map<String, Object> map = new HashMap<>();
             map.put("key", "syncTemplate,syncHtml,syncRemoteType," + cacheKeyMapKey);
             Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, map, ActionType.GET_WEBSITE, Map.class);
