@@ -160,6 +160,9 @@ public class GitFileManageImpl implements FileManage {
             git.remoteAdd().setName("origin");
             long start = System.currentTimeMillis();
             for (UploadFile e : files) {
+                if (!e.getFile().exists()) {
+                    continue;
+                }
                 FileUtils.moveOrCopyFile(e.getFile().toString(), new File(repoDir + "/" + e.getFileKey()).toString(), false);
                 if (e.getFileKey().startsWith("/")) {
                     git.add().addFilepattern(e.getFileKey().substring(1)).call();
