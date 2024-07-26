@@ -18,6 +18,9 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -163,7 +166,10 @@ public class GitFileManageImpl implements FileManage {
                 if (!e.getFile().exists()) {
                     continue;
                 }
-                FileUtils.moveOrCopyFile(e.getFile().toString(), new File(repoDir + "/" + e.getFileKey()).toString(), false);
+                File targetFile = new File(repoDir + "/" + e.getFileKey());
+                if (!Objects.equals(targetFile, e.getFile())) {
+                    Files.copy(e.getFile().toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                }
                 if (e.getFileKey().startsWith("/")) {
                     git.add().addFilepattern(e.getFileKey().substring(1)).call();
                 } else {
