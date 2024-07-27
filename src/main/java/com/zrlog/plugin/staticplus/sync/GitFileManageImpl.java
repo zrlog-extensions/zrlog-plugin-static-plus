@@ -96,10 +96,7 @@ public class GitFileManageImpl implements FileManage {
             this.git = Git.open(repoDir);
         } else {
             // 不存在仓库目录，执行 clone 操作
-            this.git = Git.cloneRepository().setDepth(1).setURI(gitRemoteInfo.getUrl())
-                    .setDirectory(repoDir)
-                    .setCredentialsProvider(usernamePasswordCredentialsProvider)
-                    .call();
+            this.git = Git.cloneRepository().setDepth(1).setURI(gitRemoteInfo.getUrl()).setDirectory(repoDir).setCredentialsProvider(usernamePasswordCredentialsProvider).call();
         }
 
     }
@@ -167,6 +164,9 @@ public class GitFileManageImpl implements FileManage {
                     continue;
                 }
                 File targetFile = new File(repoDir + "/" + e.getFileKey());
+                if (!targetFile.getParentFile().exists()) {
+                    targetFile.getParentFile().mkdirs();
+                }
                 if (!Objects.equals(targetFile, e.getFile())) {
                     Files.copy(e.getFile().toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
                 }
@@ -180,11 +180,7 @@ public class GitFileManageImpl implements FileManage {
             LOGGER.info("Git add used time " + (System.currentTimeMillis() - start) + "ms");
 
             git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
-            git.push()
-                    .setCredentialsProvider(usernamePasswordCredentialsProvider)
-                    .setRemote("origin")
-                    .setRefSpecs(new RefSpec(gitRemoteInfo.getBranch() + ":" + gitRemoteInfo.getBranch()))
-                    .call();
+            git.push().setCredentialsProvider(usernamePasswordCredentialsProvider).setRemote("origin").setRefSpecs(new RefSpec(gitRemoteInfo.getBranch() + ":" + gitRemoteInfo.getBranch())).call();
             LOGGER.info("Git push success");
             return true;
         } catch (Exception e) {
