@@ -135,18 +135,19 @@ public class GitFileManageImpl implements FileManage {
     }
 
     @Override
-    public boolean doSync() {
+    public List<UploadFile> doSync() {
         return doSyncByUploadFiles(syncFiles);
     }
 
-    private boolean doSyncByUploadFiles(List<UploadFile> files) {
+    private List<UploadFile> doSyncByUploadFiles(List<UploadFile> files) {
         if (Objects.isNull(gitRemoteInfo.getUrl())) {
-            return false;
+            return new ArrayList<>();
         }
         if (Objects.isNull(files) || files.isEmpty()) {
-            return false;
+            return new ArrayList<>();
         }
         lock.lock();
+        List<UploadFile> uploadedFiles = new ArrayList<>();
         try {
             setupProxy();
             initGit();
@@ -175,6 +176,7 @@ public class GitFileManageImpl implements FileManage {
                 } else {
                     git.add().addFilepattern(e.getFileKey()).call();
                 }
+                uploadedFiles.add(e);
             }
             //git.add().addFilepattern(".").call();
             LOGGER.info("Git add used time " + (System.currentTimeMillis() - start) + "ms");
@@ -182,11 +184,11 @@ public class GitFileManageImpl implements FileManage {
             git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
             git.push().setCredentialsProvider(usernamePasswordCredentialsProvider).setRemote("origin").setRefSpecs(new RefSpec(gitRemoteInfo.getBranch() + ":" + gitRemoteInfo.getBranch())).call();
             LOGGER.info("Git push success");
-            return true;
+            return uploadedFiles;
         } catch (Exception e) {
             e.printStackTrace();
             LoggerUtil.getLogger(GitFileManageImpl.class).warning("Git [sync] push error " + e.getMessage());
-            return false;
+            return new ArrayList<>();
         } finally {
             lock.unlock();
         }
@@ -208,6 +210,9 @@ public class GitFileManageImpl implements FileManage {
 
     @Override
     public String create(File file, String key, boolean deleteRepeat, boolean supportHttps) throws Exception {
+        if (Objects.isNull(gitRemoteInfo.getAccessBaseUrl())) {
+            return key;
+        }
         createLock.lock();
         try {
             List<UploadFile> fileList = new ArrayList<>();
