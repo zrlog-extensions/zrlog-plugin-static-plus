@@ -1,4 +1,4 @@
-name: build on macos arm64 preview native
+name: build on macos arm64 release native
 on:
   push:
     branches:

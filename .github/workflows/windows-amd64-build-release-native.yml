@@ -1,4 +1,4 @@
-name: build on Windows amd64 preview native
+name: build on Windows amd64 release native
 on:
   push:
     branches:

@@ -1,4 +1,4 @@
-name: build on Linux amd64 preview native
+name: build on Linux amd64 release native
 on:
   push:
     branches:
