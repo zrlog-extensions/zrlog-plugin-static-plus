@@ -5,6 +5,7 @@ import com.zrlog.plugin.RunConstants;
 import com.zrlog.plugin.common.FileUtils;
 import com.zrlog.plugin.common.IOUtil;
 import com.zrlog.plugin.common.LoggerUtil;
+import com.zrlog.plugin.common.SecurityUtils;
 import com.zrlog.plugin.common.vo.UploadFile;
 import com.zrlog.plugin.staticplus.sync.vo.GitRemoteInfo;
 import com.zrlog.plugin.type.RunType;
@@ -224,7 +225,7 @@ public class GitFileManageImpl implements FileManage {
             UploadFile uploadFileJson = new UploadFile();
             File buildFile = new File(System.getProperty("java.io.tmpdir") + "/" + System.currentTimeMillis() + "/create-file-info.json");
             buildFile.getParentFile().mkdirs();
-            String jsonStr = new Gson().toJson(Map.of("uploadDate", System.currentTimeMillis()));
+            String jsonStr = new Gson().toJson(Map.of("file", file.getName(), "md5sum", SecurityUtils.md5ByFile(file)));
             IOUtil.writeStrToFile(jsonStr, buildFile);
             uploadFileJson.setFile(buildFile);
             uploadFileJson.setFileKey(buildFile.getName());
