@@ -2,7 +2,6 @@ package com.zrlog.plugin.staticplus.sync;
 
 import com.google.gson.Gson;
 import com.zrlog.plugin.RunConstants;
-import com.zrlog.plugin.common.FileUtils;
 import com.zrlog.plugin.common.IOUtil;
 import com.zrlog.plugin.common.LoggerUtil;
 import com.zrlog.plugin.common.vo.UploadFile;
@@ -14,11 +13,11 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.util.SystemReader;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
-import java.nio.file.CopyOption;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
@@ -43,6 +42,10 @@ public class GitFileManageImpl implements FileManage {
     private final File repoDir;
     private static final ProxySelector defaultProxySelector = ProxySelector.getDefault();
     private final PersonIdent committerAuthor;
+
+    static {
+        SystemReader.setInstance(new NoConfigSystemReader());
+    }
 
     public GitFileManageImpl(String configJsonStr, List<UploadFile> syncFiles) {
         this.gitRemoteInfo = new Gson().fromJson(configJsonStr, GitRemoteInfo.class);
