@@ -77,7 +77,7 @@ public class UploadService implements IPluginService {
         }
         long startTime = System.currentTimeMillis();
         Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, Map.of("key", "syncRemoteType"), ActionType.GET_WEBSITE, Map.class);
-        if (Objects.isNull(responseMap.get("syncRemoteType"))) {
+        if (Objects.isNull(responseMap) || Objects.isNull(responseMap.get("syncRemoteType"))) {
             return convertByUploadFileList(uploadFileList);
         }
         String syncType = responseMap.get("syncRemoteType");

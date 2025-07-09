@@ -1,4 +1,4 @@
-name: build on macos arm64 release native
+name: build on Linux arm64 release native
 on:
   push:
     branches:
@@ -10,8 +10,8 @@ jobs:
 
     strategy:
       matrix:
-        os: [ macos-13 ]
-        architecture: [ x86_64 ]
+        os: [ ubuntu-24.04-arm ]
+        architecture: [ arm64 ]
     steps:
       - uses: actions/checkout@v3
         with:
