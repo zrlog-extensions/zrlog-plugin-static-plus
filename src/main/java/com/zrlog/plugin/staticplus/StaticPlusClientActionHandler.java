@@ -22,6 +22,6 @@ public class StaticPlusClientActionHandler extends ClientActionHandler {
         if (Objects.isNull(runnable)) {
             return;
         }
-        Thread.ofVirtual().start(runnable);
+        new Thread(runnable).start();
     }
 }
