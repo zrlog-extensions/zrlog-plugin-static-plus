@@ -87,8 +87,8 @@
                 <version>3.1</version>
                 <configuration>
                     <encoding>UTF-8</encoding>
-                    <source>21</source>
-                    <target>21</target>
+                    <source>8</source>
+                    <target>8</target>
                 </configuration>
             </plugin>
             <plugin>
