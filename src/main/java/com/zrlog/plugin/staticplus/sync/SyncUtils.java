@@ -12,9 +12,10 @@ import java.util.logging.Logger;
 public class SyncUtils {
 
     private static final Logger LOGGER = LoggerUtil.getLogger(SyncUtils.class);
+    private static final HttpClient httpClient = HttpClient.newBuilder().build();
 
     public static boolean checkFileSyncs(String checkUrl, String expectContent) {
-        try (HttpClient httpClient = HttpClient.newBuilder().build()) {
+        try {
             for (int i = 0; i < 40; i++) {
                 String gitBuildJson = checkUrl + "?_" + System.currentTimeMillis();
                 HttpRequest httpRequest = HttpRequest.newBuilder()
