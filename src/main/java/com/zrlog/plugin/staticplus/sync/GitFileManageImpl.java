@@ -14,7 +14,6 @@ import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
-import org.eclipse.jgit.util.SystemReader;
 
 import java.io.File;
 import java.io.IOException;
@@ -44,9 +43,6 @@ public class GitFileManageImpl implements FileManage {
     private static final ProxySelector defaultProxySelector = ProxySelector.getDefault();
     private final PersonIdent committerAuthor;
 
-    static {
-        SystemReader.setInstance(new NoConfigSystemReader());
-    }
 
     public GitFileManageImpl(String configJsonStr, List<UploadFile> syncFiles) {
         this.gitRemoteInfo = new Gson().fromJson(configJsonStr, GitRemoteInfo.class);
