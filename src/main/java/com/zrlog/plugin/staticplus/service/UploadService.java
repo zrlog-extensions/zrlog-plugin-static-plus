@@ -91,7 +91,7 @@ public class UploadService implements IPluginService {
         }
         FileManage bucketManageAPI = null;
         if (Objects.equals("git", responseMap.get("syncRemoteType"))) {
-            bucketManageAPI = new GitFileManageImpl(configMap.get(syncType), new ArrayList<>());
+            bucketManageAPI = new GitFileManageImpl(configMap.get(syncType), new ArrayList<>(), session);
         }
         if (Objects.isNull(bucketManageAPI)) {
             return convertByUploadFileList(uploadFileList);

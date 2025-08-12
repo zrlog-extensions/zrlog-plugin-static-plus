@@ -35,7 +35,7 @@ public class GraalvmAgentApplication {
             uploadFile.setFile(testFile);
             uploadFile.setFileKey(System.currentTimeMillis() + ".tmp");
             list.add(uploadFile);
-            new GitFileManageImpl("{'url':'https://github.com/94fzb/zrlog-plugin-static-plus','branch':'main','username':'94fzb','password':'pwd'}", list).doSync();
+            new GitFileManageImpl("{'url':'https://github.com/94fzb/zrlog-plugin-static-plus','branch':'main','username':'94fzb','password':'pwd'}", list, null).doSync();
         } catch (Exception e) {
             e.printStackTrace();
         }

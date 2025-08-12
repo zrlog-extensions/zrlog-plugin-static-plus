@@ -2,10 +2,8 @@ package com.zrlog.plugin.staticplus.task;
 
 import com.google.gson.Gson;
 import com.zrlog.plugin.IOSession;
-import com.zrlog.plugin.common.FileUtils;
 import com.zrlog.plugin.common.IdUtil;
 import com.zrlog.plugin.common.LoggerUtil;
-import com.zrlog.plugin.common.SecurityUtils;
 import com.zrlog.plugin.common.model.BlogRunTime;
 import com.zrlog.plugin.common.model.TemplatePath;
 import com.zrlog.plugin.common.vo.UploadFile;
@@ -16,13 +14,9 @@ import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
 import com.zrlog.plugin.staticplus.utils.SyncFileInfoCacheUtils;
 import com.zrlog.plugin.type.ActionType;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SyncStaticResourceRunnable implements Runnable {
@@ -87,7 +81,7 @@ public class SyncStaticResourceRunnable implements Runnable {
                 if (Objects.isNull(gitConfig) || gitConfig.trim().isEmpty()) {
                     return;
                 }
-                try (FileManage fileManage = new GitFileManageImpl(gitConfig, uploadFiles)) {
+                try (FileManage fileManage = new GitFileManageImpl(gitConfig, uploadFiles, session)) {
                     List<UploadFile> uploadedFiles = fileManage.doSync();
                     if (uploadedFiles.isEmpty()) {
                         return;

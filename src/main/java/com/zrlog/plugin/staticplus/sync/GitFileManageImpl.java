@@ -1,6 +1,7 @@
 package com.zrlog.plugin.staticplus.sync;
 
 import com.google.gson.Gson;
+import com.zrlog.plugin.IOSession;
 import com.zrlog.plugin.RunConstants;
 import com.zrlog.plugin.common.IOUtil;
 import com.zrlog.plugin.common.LoggerUtil;
@@ -43,18 +44,20 @@ public class GitFileManageImpl implements FileManage {
     private final File repoDir;
     private static final ProxySelector defaultProxySelector = ProxySelector.getDefault();
     private final PersonIdent committerAuthor;
+    private final IOSession session;
 
     static {
         SystemReader.setInstance(new NoConfigSystemReader());
     }
 
-    public GitFileManageImpl(String configJsonStr, List<UploadFile> syncFiles) {
+    public GitFileManageImpl(String configJsonStr, List<UploadFile> syncFiles, IOSession session) {
         this.gitRemoteInfo = new Gson().fromJson(configJsonStr, GitRemoteInfo.class);
         this.syncFiles = syncFiles;
         this.usernamePasswordCredentialsProvider = new UsernamePasswordCredentialsProvider(gitRemoteInfo.getUsername(), gitRemoteInfo.getPassword());
         String cloneDirectoryPath = System.getProperty("user.dir") + "/" + new File(URI.create(gitRemoteInfo.getUrl()).getPath()).getName();
         this.repoDir = new File(cloneDirectoryPath);
         this.committerAuthor = new PersonIdent(Objects.requireNonNullElse(gitRemoteInfo.getGitCommitterUsername(), "static-plus-robot"), Objects.requireNonNullElse(gitRemoteInfo.getGitCommitterEmail(), "static-plus-robot@zrlog.com"));
+        this.session = session;
     }
 
     private void checkout(Git git, String branchName, UsernamePasswordCredentialsProvider usernamePasswordCredentialsProvider) throws IOException, GitAPIException {
@@ -207,7 +210,7 @@ public class GitFileManageImpl implements FileManage {
         uploadFile.setFile(testFile);
         uploadFile.setFileKey(System.currentTimeMillis() + ".tmp");
         uploadFile.setRefresh(true);
-        try (GitFileManageImpl gitFileManage = new GitFileManageImpl(IOUtil.getStringInputStream(GitFileManageImpl.class.getResourceAsStream("/test-git-remove-info.json")), new ArrayList<>())) {
+        try (GitFileManageImpl gitFileManage = new GitFileManageImpl(IOUtil.getStringInputStream(GitFileManageImpl.class.getResourceAsStream("/test-git-remove-info.json")), new ArrayList<>(), null)) {
             gitFileManage.create(testFile, uploadFile.getFileKey(), true, true);
         }
     }
@@ -236,7 +239,10 @@ public class GitFileManageImpl implements FileManage {
             fileList.add(uploadFileJson);
             doSyncByUploadFiles(fileList);
             if (Objects.nonNull(gitRemoteInfo.getAccessBaseUrl()) && !gitRemoteInfo.getAccessBaseUrl().isEmpty()) {
-                SyncUtils.checkFileSyncs(gitRemoteInfo.getAccessBaseUrl() + "/" + buildFile.getName(), jsonStr);
+                boolean result = SyncUtils.checkFileSyncs(gitRemoteInfo.getAccessBaseUrl() + "/" + buildFile.getName(), jsonStr, session);
+                if (result) {
+                    LOGGER.info("Files sync success");
+                }
             }
             if (gitRemoteInfo.getAccessBaseUrl().endsWith("/")) {
                 return gitRemoteInfo.getAccessBaseUrl() + key;
