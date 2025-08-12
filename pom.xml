@@ -153,11 +153,9 @@
                                     -H:+BuildReport
                                     -H:+AddAllCharsets
                                     -H:+UnlockExperimentalVMOptions
-                                    --initialize-at-build-time=sun.security.krb5.SCDynamicStoreConfig
-                                    --initialize-at-build-time=java.util.ImmutableCollections$ListN
-                                    --trace-class-initialization=sun.security.krb5.SCDynamicStoreConfig
-                                    -H:+UnlockExperimentalVMOptions
-                                    -march=compatibility --enable-preview -H:DashboardDump=${imageName}
+                                    -march=compatibility
+                                    --enable-preview
+                                    -H:DashboardDump=${imageName}
                                     --enable-url-protocols=http
                                     --enable-url-protocols=https
                                     -H:+DashboardAll
