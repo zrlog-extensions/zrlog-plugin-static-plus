@@ -10,6 +10,7 @@ import com.zrlog.plugin.staticplus.controller.StaticPlusController;
 import com.zrlog.plugin.staticplus.service.UploadService;
 import com.zrlog.plugin.staticplus.service.UploadToPrivateService;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
+import com.zrlog.plugin.staticplus.sync.vo.CreateFileInfoVO;
 
 import java.io.File;
 import java.io.IOException;
@@ -23,6 +24,7 @@ public class GraalvmAgentApplication {
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException {
         new Gson().toJson(new HttpRequestInfo());
         new Gson().toJson(new Plugin());
+        new Gson().toJson(new CreateFileInfoVO());
         String basePath = System.getProperty("user.dir").replace("\\target", "").replace("/target", "");
         File file = new File(basePath + "/src/main/resources");
         PluginNativeImageUtils.doLoopResourceLoad(file.listFiles(), file.getPath() + "/", "/");

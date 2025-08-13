@@ -19,3 +19,4 @@
 test-git-remove-info.json
 *.log.*
 test-zrlog-static-plus
+static-plus.bgv
