@@ -6,7 +6,7 @@
 
     <groupId>com.zrlog</groupId>
     <artifactId>plugin-static-plus</artifactId>
-    <version>3.2.12</version>
+    <version>3.2.13</version>
 
     <properties>
         <outputDirectory>/home/xiaochun/zrlog-plugin/</outputDirectory>
