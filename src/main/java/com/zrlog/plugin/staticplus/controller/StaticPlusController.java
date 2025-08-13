@@ -56,7 +56,7 @@ public class StaticPlusController {
                 map.put("syncRemoteType", "git");
             }
             data.put("data", new Gson().toJson(map));
-            session.responseHtml("/templates/index.html", data, requestPacket.getMethodStr(), requestPacket.getMsgId());
+            session.responseHtml("/templates/index", data, requestPacket.getMethodStr(), requestPacket.getMsgId());
         });
     }
 }
