@@ -148,7 +148,7 @@
                             <fallback>false</fallback>
                             <buildArgs>
                                 <arg>
-                                    -Ob
+                                    -Os
                                     --enable-sbom
                                     -H:+BuildReport
                                     -H:+AddAllCharsets
