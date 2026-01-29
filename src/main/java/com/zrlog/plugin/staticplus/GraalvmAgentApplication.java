@@ -1,20 +1,19 @@
 package com.zrlog.plugin.staticplus;
 
-import com.google.gson.Gson;
 import com.zrlog.plugin.common.IOUtil;
 import com.zrlog.plugin.common.PluginNativeImageUtils;
 import com.zrlog.plugin.common.vo.UploadFile;
-import com.zrlog.plugin.data.codec.HttpRequestInfo;
-import com.zrlog.plugin.message.Plugin;
 import com.zrlog.plugin.staticplus.controller.StaticPlusController;
 import com.zrlog.plugin.staticplus.service.UploadService;
 import com.zrlog.plugin.staticplus.service.UploadToPrivateService;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
 import com.zrlog.plugin.staticplus.sync.vo.CreateFileInfoVO;
+import com.zrlog.plugin.staticplus.sync.vo.GitRemoteInfo;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -22,9 +21,6 @@ public class GraalvmAgentApplication {
 
 
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException {
-        new Gson().toJson(new HttpRequestInfo());
-        new Gson().toJson(new Plugin());
-        new Gson().toJson(new CreateFileInfoVO());
         String basePath = System.getProperty("user.dir").replace("\\target", "").replace("/target", "");
         File file = new File(basePath + "/src/main/resources");
         PluginNativeImageUtils.doLoopResourceLoad(file.listFiles(), file.getPath() + "/", "/");
@@ -43,6 +39,7 @@ public class GraalvmAgentApplication {
         }
         try {
             PluginNativeImageUtils.usedGsonObject();
+            PluginNativeImageUtils.gsonNativeAgentByClazz(Arrays.asList(CreateFileInfoVO.class, GitRemoteInfo.class));
         } catch (Exception e) {
             e.printStackTrace();
         }

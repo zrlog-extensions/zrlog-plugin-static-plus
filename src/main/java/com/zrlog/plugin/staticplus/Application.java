@@ -23,7 +23,7 @@ public class Application {
      * @param args
      */
     public static void main(String[] args) throws IOException {
-        List<Class> classList = new ArrayList<>();
+        List<Class<?>> classList = new ArrayList<>();
         ConnectHandler connectHandler = new ConnectHandler();
         classList.add(StaticPlusController.class);
         new NioClient(connectHandler, new SimpleTemplateRender(), new StaticPlusClientActionHandler(connectHandler)).connectServer(args, classList, StaticPlusPluginAction.class, Arrays.asList(UploadService.class, UploadToPrivateService.class));
