@@ -6,7 +6,7 @@
 
     <groupId>com.zrlog</groupId>
     <artifactId>plugin-static-plus</artifactId>
-    <version>3.2.14</version>
+    <version>3.3.0</version>
 
     <properties>
         <outputDirectory>/home/xiaochun/zrlog-plugin/</outputDirectory>
@@ -20,7 +20,7 @@
         <dependency>
             <groupId>com.hibegin</groupId>
             <artifactId>zrlog-plugin-common</artifactId>
-            <version>3.2.14</version>
+            <version>3.3.0</version>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jgit</groupId>
@@ -149,17 +149,17 @@
                             <buildArgs>
                                 <arg>
                                     -Os
+                                    --enable-sbom
                                     -H:+BuildReport
                                     -H:+AddAllCharsets
                                     -H:+UnlockExperimentalVMOptions
-                                    --allow-incomplete-classpath
                                     -march=compatibility
                                     --enable-preview
                                     -H:DashboardDump=${imageName}
-                                    -H:+DashboardAll
-                                    -H:IncludeResources=
                                     --enable-url-protocols=http
                                     --enable-url-protocols=https
+                                    -H:+DashboardAll
+                                    -H:IncludeResources=
                                 </arg>
                             </buildArgs>
                             <mainClass>${native.image.mainClass}</mainClass>

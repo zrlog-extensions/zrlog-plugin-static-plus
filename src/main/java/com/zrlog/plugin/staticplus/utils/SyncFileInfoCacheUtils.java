@@ -82,8 +82,11 @@ public class SyncFileInfoCacheUtils {
         return uploadFiles;
     }
 
-    private static String getStaticResource(String templateFilePath) throws IOException {
-        File propertiesFile = new File(templateFilePath + "/template.properties");
+    private static String getStaticResource(BlogRunTime blogRunTime, TemplatePath templatePath) throws IOException {
+        if (Objects.equals(templatePath.getValue(), "/include/templates/default")) {
+            return "";
+        }
+        File propertiesFile = new File(blogRunTime.getPath() + templatePath.getValue() + "/template.properties");
         if (propertiesFile.exists()) {
             try (FileInputStream fileInputStream = new FileInputStream(propertiesFile)) {
                 Properties prop = new Properties();
@@ -91,7 +94,7 @@ public class SyncFileInfoCacheUtils {
                 return (String) prop.get("staticResource");
             }
         }
-        if (templateFilePath.contains("/hexo-theme-")) {
+        if (templatePath.getValue().contains("/hexo-theme-")) {
             return "source";
         }
         LOGGER.log(Level.SEVERE, "Template properties not find " + propertiesFile);
@@ -102,20 +105,13 @@ public class SyncFileInfoCacheUtils {
         if (!"on".equals(responseMap.get("syncTemplate"))) {
             return new ArrayList<>();
         }
-        File templateFilePath = new File(blogRunTime.getPath() + templatePath.getValue());
-        if (!templateFilePath.isDirectory()) {
-            if (Objects.equals(templatePath.getValue(), "/include/templates/default")) {
-                return new ArrayList<>();
-            }
-            LOGGER.log(Level.INFO, "Template path not directory " + templateFilePath);
-            return new ArrayList<>();
-        }
         List<UploadFile> uploadFiles = new ArrayList<>();
         try {
-            String staticResource = getStaticResource(templatePath.getValue());
+            String staticResource = getStaticResource(blogRunTime, templatePath);
             if (Objects.isNull(staticResource) || staticResource.isEmpty()) {
                 return uploadFiles;
             }
+            File templateFilePath = new File(blogRunTime.getPath() + templatePath.getValue());
             List<File> fileList = new ArrayList<>(getStaticFolderFiles(staticResource, templateFilePath, blogRunTime));
             fillToUploadFiles(fileList, blogRunTime.getPath(), uploadFiles, fileInfoCacheMap);
         } catch (IOException e) {
