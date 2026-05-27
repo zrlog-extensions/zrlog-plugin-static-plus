@@ -148,18 +148,18 @@
                             <fallback>false</fallback>
                             <buildArgs>
                                 <arg>
-                                    -Ob
-                                    --enable-sbom
+                                    -Os
                                     -H:+BuildReport
                                     -H:+AddAllCharsets
                                     -H:+UnlockExperimentalVMOptions
+                                    --allow-incomplete-classpath
                                     -march=compatibility
                                     --enable-preview
                                     -H:DashboardDump=${imageName}
-                                    --enable-url-protocols=http
-                                    --enable-url-protocols=https
                                     -H:+DashboardAll
                                     -H:IncludeResources=
+                                    --enable-url-protocols=http
+                                    --enable-url-protocols=https
                                 </arg>
                             </buildArgs>
                             <mainClass>${native.image.mainClass}</mainClass>
