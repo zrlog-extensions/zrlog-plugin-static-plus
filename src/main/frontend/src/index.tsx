@@ -3,10 +3,25 @@ import {App, ConfigProvider, theme} from "antd";
 import zhCN from "antd/es/locale/zh_CN";
 import {useEffect, useState} from "react";
 import {createRoot} from "react-dom/client";
+import {createGlobalStyle} from "styled-components";
 import AppBase from "./AppBase";
-import "./style.css";
 
 const {darkAlgorithm, defaultAlgorithm} = theme;
+
+const GlobalStyle = createGlobalStyle`
+  body {
+      background-color: #f5f7fa;
+      color: #1f1f1f;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      margin: 0;
+      transition: background-color 0.2s, color 0.2s;
+  }
+
+  body.dark {
+      background-color: #141414;
+      color: #dfdfdf;
+  }
+`;
 
 export interface StaticPlusConfig {
     syncTemplate?: string;
@@ -57,6 +72,7 @@ const Index = () => {
         >
             <StyleProvider transformers={[legacyLogicalPropertiesTransformer]}>
                 <App>
+                    <GlobalStyle />
                     <AppBase config={safeConfig} />
                 </App>
             </StyleProvider>

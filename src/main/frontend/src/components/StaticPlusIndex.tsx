@@ -10,7 +10,6 @@ import {
     Divider,
     message,
     Tooltip,
-    Alert,
     Collapse,
     Table,
     Tag,
@@ -25,7 +24,6 @@ import {
     BranchesOutlined,
     UserOutlined,
     MailOutlined,
-    CloudOutlined,
     ApiOutlined,
     HistoryOutlined,
     ReloadOutlined,
@@ -34,6 +32,7 @@ import {
 } from "@ant-design/icons";
 import axios from "axios";
 import {FunctionComponent, useState, useEffect} from "react";
+import styled from "styled-components";
 import {StaticPlusConfig} from "../index";
 
 const {Title, Paragraph, Text} = Typography;
@@ -70,8 +69,245 @@ interface FormValues {
     syncAttached: boolean;
 }
 
+/* Styled Components for Restrained & Professional Layout */
+const Shell = styled.div`
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px 16px;
+  box-sizing: border-box;
+
+  @media (max-width: 768px) {
+      padding: 12px 10px;
+  }
+`;
+
+const Header = styled.div`
+  margin-bottom: 20px;
+  padding: 12px 0;
+  border-bottom: 1px solid #f0f0f0;
+
+  h3 {
+      margin: 0 !important;
+  }
+
+  p {
+      margin: 4px 0 0 0 !important;
+      font-size: 13px !important;
+  }
+
+  body.dark & {
+      border-bottom-color: #303030;
+  }
+`;
+
+const MainLayoutGrid = styled.div`
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  margin-bottom: 16px;
+
+  @media (max-width: 768px) {
+      grid-template-columns: 1fr;
+      gap: 12px;
+  }
+`;
+
+const StyledCard = styled(Card)`
+  background: #ffffff !important;
+  border: 1px solid #f0f0f0 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
+
+  .ant-card-head {
+      border-bottom: 1px solid #f0f0f0 !important;
+      padding: 12px 16px !important;
+      font-size: 14px;
+      font-weight: 600;
+  }
+
+  .ant-card-body {
+      padding: 16px !important;
+      @media (max-width: 768px) {
+          padding: 12px !important;
+      }
+  }
+
+  body.dark & {
+      background: #1f1f1f !important;
+      border-color: #303030 !important;
+      box-shadow: none !important;
+
+      .ant-card-head {
+          border-color: #303030 !important;
+      }
+  }
+`;
+
+const SwitchGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+`;
+
+const SwitchItem = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+
+  @media (max-width: 768px) {
+      align-items: flex-start;
+  }
+`;
+
+const SwitchInfo = styled.div`
+  flex: 1;
+`;
+
+const SwitchLabel = styled(Text)`
+  font-size: 14px;
+  font-weight: 600;
+`;
+
+const SwitchDesc = styled(Paragraph)`
+  margin: 2px 0 0 0 !important;
+  font-size: 12px;
+  color: #8c8c8c;
+  line-height: 1.4;
+
+  body.dark & {
+      color: #707070;
+  }
+`;
+
+const TooltipIcon = styled(InfoCircleOutlined)`
+  color: rgba(0, 0, 0, 0.45);
+  font-size: 12px;
+
+  body.dark & {
+      color: rgba(255, 255, 255, 0.45);
+  }
+`;
+
+const PrefixGlobal = styled(GlobalOutlined)`
+  color: rgba(0, 0, 0, 0.35);
+  body.dark & {
+      color: rgba(255, 255, 255, 0.35);
+  }
+`;
+
+const PrefixBranches = styled(BranchesOutlined)`
+  color: rgba(0, 0, 0, 0.35);
+  body.dark & {
+      color: rgba(255, 255, 255, 0.35);
+  }
+`;
+
+const PrefixUser = styled(UserOutlined)`
+  color: rgba(0, 0, 0, 0.35);
+  body.dark & {
+      color: rgba(255, 255, 255, 0.35);
+  }
+`;
+
+const PrefixKey = styled(KeyOutlined)`
+  color: rgba(0, 0, 0, 0.35);
+  body.dark & {
+      color: rgba(255, 255, 255, 0.35);
+  }
+`;
+
+const PrefixMail = styled(MailOutlined)`
+  color: rgba(0, 0, 0, 0.35);
+  body.dark & {
+      color: rgba(255, 255, 255, 0.35);
+  }
+`;
+
+const PrefixApi = styled(ApiOutlined)`
+  color: rgba(0, 0, 0, 0.35);
+  body.dark & {
+      color: rgba(255, 255, 255, 0.35);
+  }
+`;
+
+const Divider12 = styled(Divider)`
+  margin: 12px 0 !important;
+`;
+
+const Divider8 = styled(Divider)`
+  margin: 8px 0 !important;
+`;
+
+const AdvancedCollapse = styled(Collapse)`
+  margin-top: 12px !important;
+
+  .ant-collapse-header {
+      font-size: 13px !important;
+      color: #1677ff !important;
+      font-weight: 500 !important;
+      padding: 8px 0 !important;
+  }
+`;
+
+const AdvancedPanelBody = styled.div`
+  padding: 4px 0;
+`;
+
+const AdvancedDividerFirst = styled(Divider)`
+  margin: 4px 0 12px !important;
+  font-size: 12px !important;
+`;
+
+const AdvancedDividerSecond = styled(Divider)`
+  margin: 16px 0 12px !important;
+  font-size: 12px !important;
+`;
+
+const HistoryCard = styled(StyledCard)`
+  margin-top: 16px !important;
+`;
+
+const HistoryCardTitle = styled.div`
+  display: flex;
+  width: 100%;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+`;
+
+const HistoryTableText = styled(Text)`
+  font-size: 13px;
+`;
+
+const HistoryLogText = styled(Text)`
+  font-size: 13px;
+`;
+
+const ActionsFooter = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 24px;
+  padding: 16px 0;
+  border-top: 1px solid #f0f0f0;
+
+  body.dark & {
+      border-top-color: #303030;
+  }
+
+  @media (max-width: 768px) {
+      justify-content: center;
+      width: 100%;
+
+      button {
+          width: 100%;
+      }
+  }
+`;
+
 const syncRemoteTypeOptions = [
-    {label: "Git 仓库 (GitHub / Gitee / GitLab / Coding)", value: "git"},
+    {label: "Git 仓库", value: "git"},
 ];
 
 const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
@@ -113,7 +349,6 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
         }
     }, [config.syncHistory]);
 
-    // Parse the inner Git configuration string
     const gitData = (): GitConfig => {
         if (!config.git) {
             return {};
@@ -128,7 +363,6 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
     const git = gitData();
 
-    // Initial form values mapping
     const initialValues: FormValues = {
         syncRemoteType: config.syncRemoteType || "git",
         gitUrl: git.url || "",
@@ -175,7 +409,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
             if (data.success || data.status === 200) {
                 messageApi.success({
-                    content: "配置保存成功！系统将在后台自动生成静态文件并触发同步任务。",
+                    content: "配置保存成功，系统已在后台运行同步。",
                     duration: 3,
                 });
                 setTimeout(loadHistory, 3000);
@@ -184,7 +418,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
             }
         } catch (e) {
             messageApi.error({
-                content: e instanceof Error ? `保存失败：${e.message}` : "保存失败，请检查网络或后端日志",
+                content: e instanceof Error ? `保存失败：${e.message}` : "保存失败",
                 duration: 4,
             });
         } finally {
@@ -193,32 +427,16 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
     };
 
     return (
-        <div className="static-plus-shell">
+        <Shell>
             {contextHolder}
 
-            {/* Header section with rich aesthetics */}
-            <div className="static-plus-topbar">
-                <div className="topbar-left">
-                    <div className="logo-badge">
-                        <GlobalOutlined className="spinning-logo" />
-                    </div>
-                    <div>
-                        <Title level={2} className="static-plus-title">Static Plus 静态化与同步设置</Title>
-                        <Paragraph className="static-plus-subtitle">
-                            自动把您的 ZrLog 博客编译为百分之百纯静态的 HTML 网页，并通过 Git 强力推送部署至您的远程静态服务器中。
-                        </Paragraph>
-                    </div>
-                </div>
-            </div>
-
-            <Alert
-                message="系统提示"
-                description="配置保存后系统会自动在后台运行编译同步服务，首次全量同步花费时间可能稍长，可通过博客控制台的同步日志查看进度。"
-                type="info"
-                showIcon
-                closable
-                style={{marginBottom: 20, borderRadius: 8}}
-            />
+            {/* Restrained and minimal header */}
+            <Header>
+                <Title level={3}>静态化与同步设置</Title>
+                <Paragraph type="secondary">
+                    配置博客的静态化编译选项以及远程 Git 仓库的自动同步凭据。
+                </Paragraph>
+            </Header>
 
             <Form
                 form={form}
@@ -227,86 +445,83 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                 onFinish={handleSave}
                 requiredMark="optional"
             >
-                <div className="main-layout-grid">
-                    {/* Left Column: Basic Settings & Sync Controls */}
+                <MainLayoutGrid>
+                    {/* Left Column: Basic Settings */}
                     <div className="layout-col-left">
-                        <Card
+                        <StyledCard
                             title={<span><SettingOutlined /> 基础同步设置</span>}
-                            className="premium-card hover-lift"
                             bordered={false}
                         >
                             <Form.Item
-                                label="同步远端类型"
                                 name="syncRemoteType"
                                 rules={[{required: true}]}
                             >
-                                <Select options={syncRemoteTypeOptions} size="large" />
+                                <Select options={syncRemoteTypeOptions} />
                             </Form.Item>
 
-                            <Divider style={{margin: "16px 0"}} />
+                            <Divider12 />
 
-                            <div className="switch-group">
-                                <div className="switch-item">
-                                    <div className="switch-info">
-                                        <Text className="switch-label">主题静态文件同步</Text>
-                                        <Paragraph className="switch-desc">
-                                            同步博客当前活跃主题下的 CSS, JS 和其他主题附带的静态资产（需要主题支持）。
-                                        </Paragraph>
-                                    </div>
+                            <SwitchGroup>
+                                <SwitchItem>
+                                    <SwitchInfo>
+                                        <SwitchLabel>主题静态文件同步</SwitchLabel>
+                                        <SwitchDesc>
+                                            同步活跃主题下的 CSS、JS 和图片静态资源。
+                                        </SwitchDesc>
+                                    </SwitchInfo>
                                     <Form.Item name="syncTemplate" valuePropName="checked" noStyle>
-                                        <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+                                        <Switch size="small" />
                                     </Form.Item>
-                                </div>
+                                </SwitchItem>
 
-                                <Divider style={{margin: "12px 0"}} />
+                                <Divider8 />
 
-                                <div className="switch-item">
-                                    <div className="switch-info">
-                                        <Text className="switch-label">静态缓存 HTML 同步</Text>
-                                        <Paragraph className="switch-desc">
-                                            全量静态化博客所有页面并同步成 HTML，极大加快前台站点的访问和响应速度。
-                                        </Paragraph>
-                                    </div>
+                                <SwitchItem>
+                                    <SwitchInfo>
+                                        <SwitchLabel>静态缓存 HTML 同步</SwitchLabel>
+                                        <SwitchDesc>
+                                            静态化全站文章与页面 HTML 并同步。
+                                        </SwitchDesc>
+                                    </SwitchInfo>
                                     <Form.Item name="syncHtml" valuePropName="checked" noStyle>
-                                        <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+                                        <Switch size="small" />
                                     </Form.Item>
-                                </div>
+                                </SwitchItem>
 
-                                <Divider style={{margin: "12px 0"}} />
+                                <Divider8 />
 
-                                <div className="switch-item">
-                                    <div className="switch-info">
-                                        <Text className="switch-label">静态附件同步</Text>
-                                        <Paragraph className="switch-desc">
-                                            同步随文章一同上传至附件库中的各种媒体资源，如图片、文件等资产。
-                                        </Paragraph>
-                                    </div>
+                                <SwitchItem>
+                                    <SwitchInfo>
+                                        <SwitchLabel>静态附件同步</SwitchLabel>
+                                        <SwitchDesc>
+                                            同步上传到附件库中的媒体资产。
+                                        </SwitchDesc>
+                                    </SwitchInfo>
                                     <Form.Item name="syncAttached" valuePropName="checked" noStyle>
-                                        <Switch checkedChildren="开启" unCheckedChildren="关闭" />
+                                        <Switch size="small" />
                                     </Form.Item>
-                                </div>
-                            </div>
-                        </Card>
+                                </SwitchItem>
+                            </SwitchGroup>
+                        </StyledCard>
                     </div>
 
-                    {/* Right Column: Git Configuration Cards */}
+                    {/* Right Column: Git Configuration */}
                     <div className="layout-col-right">
-                        <Card
+                        <StyledCard
                             title={
                                 <Space>
                                     <GithubOutlined />
-                                    <span>Git 仓库同步凭据</span>
+                                    <span>Git 仓库配置</span>
                                 </Space>
                             }
-                            className="premium-card hover-lift"
                             bordered={false}
                         >
                             <Form.Item
                                 label={
                                     <Space>
                                         <span>Git 仓库 URL</span>
-                                        <Tooltip title="输入您的托管服务仓库 SSH 或 HTTPS 链接。推荐使用 https 格式配合个人访问令牌（Personal Access Token）。">
-                                            <InfoCircleOutlined style={{color: "rgba(0,0,0,0.45)"}} />
+                                        <Tooltip title="托管服务 SSH 或 HTTPS 链接。推荐使用 https 配合 Access Token。">
+                                            <TooltipIcon />
                                         </Tooltip>
                                     </Space>
                                 }
@@ -320,40 +535,30 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                 ]}
                             >
                                 <Input
-                                    prefix={<GlobalOutlined className="input-icon" />}
-                                    placeholder="https://github.com/username/username.github.io.git"
-                                    size="large"
+                                    prefix={<PrefixGlobal />}
+                                    placeholder="https://github.com/username/repo.github.io.git"
                                 />
                             </Form.Item>
 
                             <Form.Item
-                                label={
-                                    <Space>
-                                        <span>分支名称 (Branch)</span>
-                                        <Tooltip title="要同步和推送的分支，例如 main, master, 或 gh-pages。">
-                                            <InfoCircleOutlined style={{color: "rgba(0,0,0,0.45)"}} />
-                                        </Tooltip>
-                                    </Space>
-                                }
+                                label="分支名称 (Branch)"
                                 name="gitBranch"
                                 rules={[{required: true, message: "请输入分支名称"}]}
                             >
                                 <Input
-                                    prefix={<BranchesOutlined className="input-icon" />}
+                                    prefix={<PrefixBranches />}
                                     placeholder="例如: main"
-                                    size="large"
                                 />
                             </Form.Item>
 
                             <Form.Item
-                                label="Git 账号 / 凭证所有者"
+                                label="Git 凭证所有者"
                                 name="gitUsername"
                                 rules={[{required: true, message: "请输入用户名"}]}
                             >
                                 <Input
-                                    prefix={<UserOutlined className="input-icon" />}
-                                    placeholder="输入您的托管平台登录邮箱或用户名"
-                                    size="large"
+                                    prefix={<PrefixUser />}
+                                    placeholder="输入托管平台用户名或邮箱"
                                 />
                             </Form.Item>
 
@@ -361,60 +566,50 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                 label={
                                     <Space>
                                         <span>密码 / 个人访问令牌 (Token)</span>
-                                        <Tooltip title="对于 GitHub/Gitee，建议使用生成的个人访问令牌 (PAT) 代替明文登录密码，更加安全且不受多因素验证(2FA)影响。">
-                                            <InfoCircleOutlined style={{color: "rgba(0,0,0,0.45)"}} />
+                                        <Tooltip title="对于 GitHub，建议使用生成的个人访问令牌 (PAT) 代替明文登录密码以保障安全。">
+                                            <TooltipIcon />
                                         </Tooltip>
                                     </Space>
                                 }
                                 name="gitPassword"
                             >
                                 <Input.Password
-                                    prefix={<KeyOutlined className="input-icon" />}
-                                    placeholder="输入账户登录密码或 Token 密钥令牌"
-                                    size="large"
+                                    prefix={<PrefixKey />}
+                                    placeholder="输入账户密码或 Access Token"
                                 />
                             </Form.Item>
 
                             <Form.Item
-                                label={
-                                    <Space>
-                                        <span>自定义静态博客域名</span>
-                                        <Tooltip title="访问该静态网站所需的自定义独立域名或 GitHub 默认分配子域名（用作静态页面解析优化）。">
-                                            <InfoCircleOutlined style={{color: "rgba(0,0,0,0.45)"}} />
-                                        </Tooltip>
-                                    </Space>
-                                }
+                                label="自定义静态域名"
                                 name="gitAccessBaseUrl"
                             >
                                 <Input
-                                    prefix={<GlobalOutlined className="input-icon" />}
+                                    prefix={<PrefixGlobal />}
                                     placeholder="例如: https://username.github.io"
-                                    size="large"
                                 />
                             </Form.Item>
 
-                            <Collapse ghost style={{ marginTop: 16 }}>
+                            <AdvancedCollapse ghost>
                                 <Collapse.Panel
-                                    header={<span style={{ fontWeight: 600, color: '#4f46e5' }}>高级 Git 配置 (网络代理与提交人信息)</span>}
+                                    header="高级配置 (代理与提交人)"
                                     key="advanced"
                                 >
-                                    <div style={{ padding: '0 8px 8px' }}>
-                                        <Divider orientation={"left" as any} style={{ margin: '8px 0 16px', fontSize: 13 }}>
-                                            <ApiOutlined /> Git 提交者信息
-                                        </Divider>
+                                    <AdvancedPanelBody>
+                                        <AdvancedDividerFirst orientation={"left" as any}>
+                                            提交者身份
+                                        </AdvancedDividerFirst>
                                         <Form.Item
-                                            label="提交人用户名 (Committer Name)"
+                                            label="提交人用户名"
                                             name="gitCommitterUsername"
                                         >
                                             <Input
-                                                prefix={<UserOutlined className="input-icon" />}
+                                                prefix={<PrefixUser />}
                                                 placeholder="例如: ZrLog Bot"
-                                                size="large"
                                             />
                                         </Form.Item>
 
                                         <Form.Item
-                                            label="提交人邮箱 (Committer Email)"
+                                            label="提交人邮箱"
                                             name="gitCommitterEmail"
                                             rules={[
                                                 {
@@ -424,28 +619,26 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             ]}
                                         >
                                             <Input
-                                                prefix={<MailOutlined className="input-icon" />}
+                                                prefix={<PrefixMail />}
                                                 placeholder="例如: bot@example.com"
-                                                size="large"
                                             />
                                         </Form.Item>
 
-                                        <Divider orientation={"left" as any} style={{ margin: '24px 0 16px', fontSize: 13 }}>
-                                            <CloudOutlined /> 网络代理设置
-                                        </Divider>
+                                        <AdvancedDividerSecond orientation={"left" as any}>
+                                            网络代理
+                                        </AdvancedDividerSecond>
                                         <Form.Item
-                                            label="HTTP 代理主机 (HTTP Proxy Host)"
+                                            label="HTTP 代理主机"
                                             name="proxyHttpHost"
                                         >
                                             <Input
-                                                prefix={<GlobalOutlined className="input-icon" />}
+                                                prefix={<PrefixGlobal />}
                                                 placeholder="例如: 127.0.0.1"
-                                                size="large"
                                             />
                                         </Form.Item>
 
                                         <Form.Item
-                                            label="HTTP 代理端口 (HTTP Proxy Port)"
+                                            label="HTTP 代理端口"
                                             name="proxyHttpPort"
                                             rules={[
                                                 {
@@ -455,24 +648,24 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             ]}
                                         >
                                             <Input
-                                                prefix={<ApiOutlined className="input-icon" />}
+                                                prefix={<PrefixApi />}
                                                 placeholder="例如: 7890"
-                                                size="large"
                                             />
                                         </Form.Item>
-                                    </div>
+                                    </AdvancedPanelBody>
                                 </Collapse.Panel>
-                            </Collapse>
-                        </Card>
+                            </AdvancedCollapse>
+                        </StyledCard>
                     </div>
-                </div>
+                </MainLayoutGrid>
 
-                <Card
+                {/* Mobile Scroll-friendly Sync History Table Card */}
+                <HistoryCard
                     title={
-                        <Space style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <HistoryCardTitle>
                             <Space>
                                 <HistoryOutlined />
-                                <span>静态化同步历史记录</span>
+                                <span>同步日志记录</span>
                             </Space>
                             <Button
                                 size="small"
@@ -480,33 +673,32 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                 onClick={loadHistory}
                                 loading={historyLoading}
                             >
-                                刷新记录
+                                刷新
                             </Button>
-                        </Space>
+                        </HistoryCardTitle>
                     }
-                    className="premium-card"
-                    style={{ marginTop: 24 }}
                     bordered={false}
                 >
                     <Table
                         dataSource={historyList}
                         rowKey="id"
                         pagination={{ pageSize: 5 }}
-                        size="middle"
-                        locale={{ emptyText: "暂无同步记录，保存配置后将自动运行同步" }}
+                        size="small"
+                        scroll={{ x: 'max-content' }}
+                        locale={{ emptyText: "暂无同步记录" }}
                         columns={[
                             {
                                 title: "同步时间",
                                 dataIndex: "time",
                                 key: "time",
-                                width: 180,
-                                render: (text: string) => <Text strong>{text}</Text>,
+                                width: 150,
+                                render: (text: string) => <HistoryTableText strong>{text}</HistoryTableText>,
                             },
                             {
                                 title: "状态",
                                 dataIndex: "success",
                                 key: "success",
-                                width: 120,
+                                width: 100,
                                 render: (success: boolean) => (
                                     success ? 
                                     <Tag color="success" icon={<CheckCircleOutlined />}>成功</Tag> : 
@@ -514,39 +706,37 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                 ),
                             },
                             {
-                                title: "推送文件数",
+                                title: "推送文件",
                                 dataIndex: "filesCount",
                                 key: "filesCount",
-                                width: 120,
-                                render: (count: number) => <Tag color="blue">{count} 个文件</Tag>,
+                                width: 100,
+                                render: (count: number) => <Tag color="blue">{count} 个</Tag>,
                             },
                             {
                                 title: "日志详情",
                                 dataIndex: "message",
                                 key: "message",
                                 render: (text: string, record: any) => (
-                                    <Text type={record.success ? "secondary" : "danger"}>{text}</Text>
+                                    <HistoryLogText type={record.success ? "secondary" : "danger"}>{text}</HistoryLogText>
                                 ),
                             },
                         ]}
                     />
-                </Card>
+                </HistoryCard>
 
                 {/* Footer action row */}
-                <div className="static-plus-actions-footer">
+                <ActionsFooter>
                     <Button
                         type="primary"
                         htmlType="submit"
-                        size="large"
                         icon={<SaveOutlined />}
                         loading={loading}
-                        className="btn-submit-premium"
                     >
                         保存配置并运行同步
                     </Button>
-                </div>
+                </ActionsFooter>
             </Form>
-        </div>
+        </Shell>
     );
 };
 
