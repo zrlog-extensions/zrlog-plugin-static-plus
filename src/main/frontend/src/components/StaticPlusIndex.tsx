@@ -275,24 +275,12 @@ const Divider8 = styled(Divider)`
   margin: 8px 0 !important;
 `;
 
-const getCookie = (name: string): string | null => {
-    const value = `; ${document.cookie}`;
-    const parts = value.split(`; ${name}=`);
-    if (parts.length === 2) {
-        const val = parts.pop()?.split(';').shift() || null;
-        return val ? decodeURIComponent(val) : null;
-    }
-    return null;
-}
-
-const getPrimaryColor = () => getCookie("Admin-Color-Primary") || "#1677ff";
-
-const AdvancedCollapse = styled(Collapse)`
+const AdvancedCollapse = styled(Collapse)<{ primaryColor?: string }>`
   margin-top: 12px !important;
 
   .ant-collapse-header {
       font-size: 13px !important;
-      color: ${getPrimaryColor()} !important;
+      color: ${props => props.primaryColor || "#1677ff"} !important;
       font-weight: 500 !important;
       padding: 8px 0 !important;
   }
@@ -698,7 +686,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                         />
                                     </Form.Item>
 
-                                    <AdvancedCollapse ghost>
+                                    <AdvancedCollapse ghost primaryColor={config.adminColorPrimary}>
                                         <Collapse.Panel
                                             header="高级配置 (代理与提交人)"
                                             key="advanced"

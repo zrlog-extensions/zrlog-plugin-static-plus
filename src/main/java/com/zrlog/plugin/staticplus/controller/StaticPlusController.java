@@ -67,6 +67,7 @@ public class StaticPlusController {
             if (Objects.isNull(map.get("syncRemoteType"))) {
                 map.put("syncRemoteType", "git");
             }
+            map.put("adminColorPrimary", requestInfo.getHeader().get("Admin-Color-Primary"));
             data.put("data", new Gson().toJson(map));
             session.responseHtml("/templates/index", data, requestPacket.getMethodStr(), requestPacket.getMsgId());
         });
