@@ -5,7 +5,7 @@ echo "real target folder ${basePath}"
 
 java -version
 sh bin/build-info.sh
-./mvnw ${2} clean package
+./mvnw ${2} -PnodeBuild clean package
 ./mvnw ${2} -Pnative -Dagent exec:exec@java-agent -U
 ./mvnw ${2} -Pnative package
 binName="static-plus"

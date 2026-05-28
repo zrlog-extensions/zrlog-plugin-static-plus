@@ -20,3 +20,8 @@ test-git-remove-info.json
 *.log.*
 test-zrlog-static-plus
 static-plus.bgv
+
+# Frontend build and dependencies
+src/main/frontend/node_modules/
+src/main/frontend/build/
+src/main/resources/templates
