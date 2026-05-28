@@ -14,6 +14,7 @@ export interface StaticPlusConfig {
     syncAttached?: string;
     syncRemoteType?: string;
     git?: string;
+    syncHistory?: string;
 }
 
 const loadFromDocument = (): StaticPlusConfig | null => {

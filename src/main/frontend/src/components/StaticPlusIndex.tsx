@@ -12,6 +12,8 @@ import {
     Tooltip,
     Alert,
     Collapse,
+    Table,
+    Tag,
 } from "antd";
 import {
     GithubOutlined,
@@ -25,9 +27,13 @@ import {
     MailOutlined,
     CloudOutlined,
     ApiOutlined,
+    HistoryOutlined,
+    ReloadOutlined,
+    CheckCircleOutlined,
+    CloseCircleOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
-import {FunctionComponent, useState} from "react";
+import {FunctionComponent, useState, useEffect} from "react";
 import {StaticPlusConfig} from "../index";
 
 const {Title, Paragraph, Text} = Typography;
@@ -72,6 +78,40 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm<FormValues>();
     const [messageApi, contextHolder] = message.useMessage();
+
+    const [historyList, setHistoryList] = useState<any[]>([]);
+    const [historyLoading, setHistoryLoading] = useState(false);
+
+    const loadHistory = async () => {
+        setHistoryLoading(true);
+        try {
+            const {data} = await axios.get("history");
+            if (data.success) {
+                try {
+                    const parsed = data.data ? JSON.parse(data.data) : [];
+                    setHistoryList(parsed);
+                } catch (e) {
+                    setHistoryList([]);
+                }
+            }
+        } catch (e) {
+            console.error("Failed to load history", e);
+        } finally {
+            setHistoryLoading(false);
+        }
+    };
+
+    useEffect(() => {
+        if (config.syncHistory) {
+            try {
+                setHistoryList(JSON.parse(config.syncHistory));
+            } catch (e) {
+                console.error("Failed to parse syncHistory", e);
+            }
+        } else {
+            loadHistory();
+        }
+    }, [config.syncHistory]);
 
     // Parse the inner Git configuration string
     const gitData = (): GitConfig => {
@@ -138,6 +178,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                     content: "配置保存成功！系统将在后台自动生成静态文件并触发同步任务。",
                     duration: 3,
                 });
+                setTimeout(loadHistory, 3000);
             } else {
                 throw new Error(data.message || "请求返回异常");
             }
@@ -425,6 +466,71 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                         </Card>
                     </div>
                 </div>
+
+                <Card
+                    title={
+                        <Space style={{ display: 'flex', width: '100%', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Space>
+                                <HistoryOutlined />
+                                <span>静态化同步历史记录</span>
+                            </Space>
+                            <Button
+                                size="small"
+                                icon={<ReloadOutlined />}
+                                onClick={loadHistory}
+                                loading={historyLoading}
+                            >
+                                刷新记录
+                            </Button>
+                        </Space>
+                    }
+                    className="premium-card"
+                    style={{ marginTop: 24 }}
+                    bordered={false}
+                >
+                    <Table
+                        dataSource={historyList}
+                        rowKey="id"
+                        pagination={{ pageSize: 5 }}
+                        size="middle"
+                        locale={{ emptyText: "暂无同步记录，保存配置后将自动运行同步" }}
+                        columns={[
+                            {
+                                title: "同步时间",
+                                dataIndex: "time",
+                                key: "time",
+                                width: 180,
+                                render: (text: string) => <Text strong>{text}</Text>,
+                            },
+                            {
+                                title: "状态",
+                                dataIndex: "success",
+                                key: "success",
+                                width: 120,
+                                render: (success: boolean) => (
+                                    success ? 
+                                    <Tag color="success" icon={<CheckCircleOutlined />}>成功</Tag> : 
+                                    <Tag color="error" icon={<CloseCircleOutlined />}>失败</Tag>
+                                ),
+                            },
+                            {
+                                title: "推送文件数",
+                                dataIndex: "filesCount",
+                                key: "filesCount",
+                                width: 120,
+                                render: (count: number) => <Tag color="blue">{count} 个文件</Tag>,
+                            },
+                            {
+                                title: "日志详情",
+                                dataIndex: "message",
+                                key: "message",
+                                render: (text: string, record: any) => (
+                                    <Text type={record.success ? "secondary" : "danger"}>{text}</Text>
+                                ),
+                            },
+                        ]}
+                    />
+                </Card>
 
                 {/* Footer action row */}
                 <div className="static-plus-actions-footer">

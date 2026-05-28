@@ -84,6 +84,7 @@ public class SyncStaticResourceRunnable implements Runnable {
                 try (FileManage fileManage = new GitFileManageImpl(gitConfig, uploadFiles, session)) {
                     List<UploadFile> uploadedFiles = fileManage.doSync();
                     if (uploadedFiles.isEmpty()) {
+                        recordSyncHistory(true, 0, "同步已完成，无新变动资源需要推送。");
                         return;
                     }
                     for (UploadFile uploadFile : uploadedFiles) {
@@ -91,12 +92,48 @@ public class SyncStaticResourceRunnable implements Runnable {
                         fileInfoCacheMap.put(key, copyFileInfoMap.get(key));
                     }
                     saveCacheToDb(fileInfoCacheMap);
+                    recordSyncHistory(true, uploadedFiles.size(), "成功推送了 " + uploadedFiles.size() + " 个新增/变更资源。");
                 }
             }
         } catch (Exception e) {
             LOGGER.warning("Sync error " + e.getMessage());
+            recordSyncHistory(false, 0, "同步失败: " + e.getMessage());
         } finally {
             reentrantLock.unlock();
+        }
+    }
+
+    private void recordSyncHistory(boolean success, int filesCount, String message) {
+        try {
+            Map<String, Object> historyRequest = new HashMap<>();
+            historyRequest.put("key", "syncHistory");
+            Map<String, String> historyResponse = (Map<String, String>) session.getResponseSync(ContentType.JSON, historyRequest, ActionType.GET_WEBSITE, Map.class);
+            String syncHistoryJson = historyResponse != null ? historyResponse.get("syncHistory") : null;
+            
+            List<Map<String, Object>> historyList;
+            if (syncHistoryJson != null && !syncHistoryJson.trim().isEmpty()) {
+                historyList = new Gson().fromJson(syncHistoryJson, List.class);
+            } else {
+                historyList = new ArrayList<>();
+            }
+            
+            Map<String, Object> record = new HashMap<>();
+            record.put("id", UUID.randomUUID().toString());
+            record.put("time", new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
+            record.put("success", success);
+            record.put("filesCount", filesCount);
+            record.put("message", message);
+            
+            historyList.add(0, record);
+            if (historyList.size() > 15) {
+                historyList = historyList.subList(0, 15);
+            }
+            
+            Map<String, String> saveMap = new HashMap<>();
+            saveMap.put("syncHistory", new Gson().toJson(historyList));
+            session.sendJsonMsg(saveMap, ActionType.SET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST);
+        } catch (Exception e) {
+            LOGGER.warning("Failed to record sync history: " + e.getMessage());
         }
     }
 

@@ -45,9 +45,21 @@ public class StaticPlusController {
         });
     }
 
+    public void history() {
+        Map<String, Object> keyMap = new HashMap<>();
+        keyMap.put("key", "syncHistory");
+        session.sendJsonMsg(keyMap, ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
+            Map map = new Gson().fromJson(msgPacket.getDataStr(), Map.class);
+            Map<String, Object> responseMap = new HashMap<>();
+            responseMap.put("success", true);
+            responseMap.put("data", map.get("syncHistory"));
+            session.sendMsg(new MsgPacket(responseMap, ContentType.JSON, MsgPacketStatus.RESPONSE_SUCCESS, requestPacket.getMsgId(), requestPacket.getMethodStr()));
+        });
+    }
+
     public void index() {
         Map<String, Object> keyMap = new HashMap<>();
-        keyMap.put("key", "syncTemplate,syncHtml,syncAttached,syncRemoteType,git");
+        keyMap.put("key", "syncTemplate,syncHtml,syncAttached,syncRemoteType,git,syncHistory");
         session.sendJsonMsg(keyMap, ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
             Map map = new Gson().fromJson(msgPacket.getDataStr(), Map.class);
             Map<String, Object> data = new HashMap<>();
