@@ -11,6 +11,7 @@ import {
     message,
     Tooltip,
     Alert,
+    Collapse,
 } from "antd";
 import {
     GithubOutlined,
@@ -21,6 +22,9 @@ import {
     KeyOutlined,
     BranchesOutlined,
     UserOutlined,
+    MailOutlined,
+    CloudOutlined,
+    ApiOutlined,
 } from "@ant-design/icons";
 import axios from "axios";
 import {FunctionComponent, useState} from "react";
@@ -38,6 +42,10 @@ interface GitConfig {
     branch?: string;
     url?: string;
     accessBaseUrl?: string;
+    gitCommitterUsername?: string;
+    gitCommitterEmail?: string;
+    proxyHttpHost?: string;
+    proxyHttpPort?: number | string;
 }
 
 interface FormValues {
@@ -47,6 +55,10 @@ interface FormValues {
     gitUsername: string;
     gitPassword?: string;
     gitAccessBaseUrl: string;
+    gitCommitterUsername: string;
+    gitCommitterEmail: string;
+    proxyHttpHost: string;
+    proxyHttpPort?: number | string;
     syncTemplate: boolean;
     syncHtml: boolean;
     syncAttached: boolean;
@@ -84,6 +96,10 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
         gitUsername: git.username || "",
         gitPassword: git.password || "",
         gitAccessBaseUrl: git.accessBaseUrl || "",
+        gitCommitterUsername: git.gitCommitterUsername || "",
+        gitCommitterEmail: git.gitCommitterEmail || "",
+        proxyHttpHost: git.proxyHttpHost || "",
+        proxyHttpPort: git.proxyHttpPort || "",
         syncTemplate: config.syncTemplate === "on",
         syncHtml: config.syncHtml === "on",
         syncAttached: config.syncAttached === "on",
@@ -98,6 +114,10 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                 username: values.gitUsername.trim(),
                 password: values.gitPassword ? values.gitPassword.trim() : "",
                 accessBaseUrl: values.gitAccessBaseUrl.trim(),
+                gitCommitterUsername: values.gitCommitterUsername ? values.gitCommitterUsername.trim() : "",
+                gitCommitterEmail: values.gitCommitterEmail ? values.gitCommitterEmail.trim() : "",
+                proxyHttpHost: values.proxyHttpHost ? values.proxyHttpHost.trim() : "",
+                proxyHttpPort: values.proxyHttpPort ? Number(values.proxyHttpPort) : "",
             };
 
             const params = new URLSearchParams();
@@ -331,6 +351,77 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                     size="large"
                                 />
                             </Form.Item>
+
+                            <Collapse ghost style={{ marginTop: 16 }}>
+                                <Collapse.Panel
+                                    header={<span style={{ fontWeight: 600, color: '#4f46e5' }}>高级 Git 配置 (网络代理与提交人信息)</span>}
+                                    key="advanced"
+                                >
+                                    <div style={{ padding: '0 8px 8px' }}>
+                                        <Divider orientation={"left" as any} style={{ margin: '8px 0 16px', fontSize: 13 }}>
+                                            <ApiOutlined /> Git 提交者信息
+                                        </Divider>
+                                        <Form.Item
+                                            label="提交人用户名 (Committer Name)"
+                                            name="gitCommitterUsername"
+                                        >
+                                            <Input
+                                                prefix={<UserOutlined className="input-icon" />}
+                                                placeholder="例如: ZrLog Bot"
+                                                size="large"
+                                            />
+                                        </Form.Item>
+
+                                        <Form.Item
+                                            label="提交人邮箱 (Committer Email)"
+                                            name="gitCommitterEmail"
+                                            rules={[
+                                                {
+                                                    type: "email",
+                                                    message: "请输入合法的邮箱地址",
+                                                }
+                                            ]}
+                                        >
+                                            <Input
+                                                prefix={<MailOutlined className="input-icon" />}
+                                                placeholder="例如: bot@example.com"
+                                                size="large"
+                                            />
+                                        </Form.Item>
+
+                                        <Divider orientation={"left" as any} style={{ margin: '24px 0 16px', fontSize: 13 }}>
+                                            <CloudOutlined /> 网络代理设置
+                                        </Divider>
+                                        <Form.Item
+                                            label="HTTP 代理主机 (HTTP Proxy Host)"
+                                            name="proxyHttpHost"
+                                        >
+                                            <Input
+                                                prefix={<GlobalOutlined className="input-icon" />}
+                                                placeholder="例如: 127.0.0.1"
+                                                size="large"
+                                            />
+                                        </Form.Item>
+
+                                        <Form.Item
+                                            label="HTTP 代理端口 (HTTP Proxy Port)"
+                                            name="proxyHttpPort"
+                                            rules={[
+                                                {
+                                                    pattern: /^[0-9]*$/,
+                                                    message: "请输入有效的端口号",
+                                                }
+                                            ]}
+                                        >
+                                            <Input
+                                                prefix={<ApiOutlined className="input-icon" />}
+                                                placeholder="例如: 7890"
+                                                size="large"
+                                            />
+                                        </Form.Item>
+                                    </div>
+                                </Collapse.Panel>
+                            </Collapse>
                         </Card>
                     </div>
                 </div>
