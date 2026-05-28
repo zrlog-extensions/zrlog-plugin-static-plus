@@ -13,12 +13,12 @@ import {
     Collapse,
     Table,
     Tag,
+    Modal,
 } from "antd";
 import {
     GithubOutlined,
     SettingOutlined,
     GlobalOutlined,
-    SaveOutlined,
     InfoCircleOutlined,
     KeyOutlined,
     BranchesOutlined,
@@ -98,6 +98,41 @@ const Header = styled.div`
 
   body.dark & {
       border-bottom-color: #303030;
+  }
+`;
+
+const HeaderContent = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+
+  @media (max-width: 768px) {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 12px;
+  }
+`;
+
+const FormScrollArea = styled.div`
+  max-height: 65vh;
+  overflow-y: auto;
+  padding-right: 8px;
+  overflow-x: hidden;
+
+  /* Custom scrollbar */
+  &::-webkit-scrollbar {
+      width: 6px;
+  }
+  &::-webkit-scrollbar-track {
+      background: transparent;
+  }
+  &::-webkit-scrollbar-thumb {
+      background: rgba(0, 0, 0, 0.15);
+      border-radius: 4px;
+  }
+  body.dark &::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.2);
   }
 `;
 
@@ -265,45 +300,12 @@ const AdvancedDividerSecond = styled(Divider)`
   font-size: 12px !important;
 `;
 
-const HistoryCard = styled(StyledCard)`
-  margin-top: 16px !important;
-`;
-
-const HistoryCardTitle = styled.div`
-  display: flex;
-  width: 100%;
-  justify-content: space-between;
-  align-items: center;
-  gap: 8px;
-`;
-
 const HistoryTableText = styled(Text)`
   font-size: 13px;
 `;
 
 const HistoryLogText = styled(Text)`
   font-size: 13px;
-`;
-
-const ActionsFooter = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 24px;
-  padding: 16px 0;
-  border-top: 1px solid #f0f0f0;
-
-  body.dark & {
-      border-top-color: #303030;
-  }
-
-  @media (max-width: 768px) {
-      justify-content: center;
-      width: 100%;
-
-      button {
-          width: 100%;
-      }
-  }
 `;
 
 const syncRemoteTypeOptions = [
@@ -317,6 +319,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
     const [historyList, setHistoryList] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
+    const [settingsVisible, setSettingsVisible] = useState(false);
 
     const loadHistory = async () => {
         setHistoryLoading(true);
@@ -412,6 +415,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                     content: "配置保存成功，系统已在后台运行同步。",
                     duration: 3,
                 });
+                setSettingsVisible(false);
                 setTimeout(loadHistory, 3000);
             } else {
                 throw new Error(data.message || "请求返回异常");
@@ -432,310 +436,328 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
             {/* Restrained and minimal header */}
             <Header>
-                <Title level={3}>静态化与同步设置</Title>
-                <Paragraph type="secondary">
-                    配置博客的静态化编译选项以及远程 Git 仓库的自动同步凭据。
-                </Paragraph>
+                <HeaderContent>
+                    <div>
+                        <Title level={3}>静态同步日志与状态</Title>
+                        <Paragraph type="secondary">
+                            查看博客远程自动同步历史。您可在“配置同步参数”中修改凭据和静态化规则。
+                        </Paragraph>
+                    </div>
+                    <Space>
+                        <Button
+                            icon={<ReloadOutlined />}
+                            onClick={loadHistory}
+                            loading={historyLoading}
+                        >
+                            刷新
+                        </Button>
+                        <Button
+                            type="primary"
+                            icon={<SettingOutlined />}
+                            onClick={() => setSettingsVisible(true)}
+                        >
+                            配置同步参数
+                        </Button>
+                    </Space>
+                </HeaderContent>
             </Header>
 
-            <Form
-                form={form}
-                layout="vertical"
-                initialValues={initialValues}
-                onFinish={handleSave}
-                requiredMark="optional"
+            {/* Mobile Scroll-friendly Sync History Table Card as MAIN display */}
+            <StyledCard
+                title={
+                    <Space>
+                        <HistoryOutlined />
+                        <span>同步日志记录</span>
+                    </Space>
+                }
+                bordered={false}
             >
-                <MainLayoutGrid>
-                    {/* Left Column: Basic Settings */}
-                    <div className="layout-col-left">
-                        <StyledCard
-                            title={<span><SettingOutlined /> 基础同步设置</span>}
-                            bordered={false}
-                        >
-                            <Form.Item
-                                name="syncRemoteType"
-                                rules={[{required: true}]}
-                            >
-                                <Select options={syncRemoteTypeOptions} />
-                            </Form.Item>
+                <Table
+                    dataSource={historyList}
+                    rowKey="id"
+                    pagination={{ pageSize: 10 }}
+                    size="small"
+                    scroll={{ x: 'max-content' }}
+                    locale={{ emptyText: "暂无同步记录" }}
+                    columns={[
+                        {
+                            title: "同步时间",
+                            dataIndex: "time",
+                            key: "time",
+                            width: 170,
+                            render: (text: string) => <HistoryTableText strong>{text}</HistoryTableText>,
+                        },
+                        {
+                            title: "状态",
+                            dataIndex: "success",
+                            key: "success",
+                            width: 100,
+                            render: (success: boolean) => (
+                                success ? 
+                                <Tag color="success" icon={<CheckCircleOutlined />}>成功</Tag> : 
+                                <Tag color="error" icon={<CloseCircleOutlined />}>失败</Tag>
+                            ),
+                        },
+                        {
+                            title: "推送文件",
+                            dataIndex: "filesCount",
+                            key: "filesCount",
+                            width: 100,
+                            render: (count: number) => <Tag color="blue">{count} 个</Tag>,
+                        },
+                        {
+                            title: "日志详情",
+                            dataIndex: "message",
+                            key: "message",
+                            render: (text: string, record: any) => (
+                                <HistoryLogText type={record.success ? "secondary" : "danger"}>{text}</HistoryLogText>
+                            ),
+                        },
+                    ]}
+                />
+            </StyledCard>
 
-                            <Divider12 />
-
-                            <SwitchGroup>
-                                <SwitchItem>
-                                    <SwitchInfo>
-                                        <SwitchLabel>主题静态文件同步</SwitchLabel>
-                                        <SwitchDesc>
-                                            同步活跃主题下的 CSS、JS 和图片静态资源。
-                                        </SwitchDesc>
-                                    </SwitchInfo>
-                                    <Form.Item name="syncTemplate" valuePropName="checked" noStyle>
-                                        <Switch size="small" />
-                                    </Form.Item>
-                                </SwitchItem>
-
-                                <Divider8 />
-
-                                <SwitchItem>
-                                    <SwitchInfo>
-                                        <SwitchLabel>静态缓存 HTML 同步</SwitchLabel>
-                                        <SwitchDesc>
-                                            静态化全站文章与页面 HTML 并同步。
-                                        </SwitchDesc>
-                                    </SwitchInfo>
-                                    <Form.Item name="syncHtml" valuePropName="checked" noStyle>
-                                        <Switch size="small" />
-                                    </Form.Item>
-                                </SwitchItem>
-
-                                <Divider8 />
-
-                                <SwitchItem>
-                                    <SwitchInfo>
-                                        <SwitchLabel>静态附件同步</SwitchLabel>
-                                        <SwitchDesc>
-                                            同步上传到附件库中的媒体资产。
-                                        </SwitchDesc>
-                                    </SwitchInfo>
-                                    <Form.Item name="syncAttached" valuePropName="checked" noStyle>
-                                        <Switch size="small" />
-                                    </Form.Item>
-                                </SwitchItem>
-                            </SwitchGroup>
-                        </StyledCard>
-                    </div>
-
-                    {/* Right Column: Git Configuration */}
-                    <div className="layout-col-right">
-                        <StyledCard
-                            title={
-                                <Space>
-                                    <GithubOutlined />
-                                    <span>Git 仓库配置</span>
-                                </Space>
-                            }
-                            bordered={false}
-                        >
-                            <Form.Item
-                                label={
-                                    <Space>
-                                        <span>Git 仓库 URL</span>
-                                        <Tooltip title="托管服务 SSH 或 HTTPS 链接。推荐使用 https 配合 Access Token。">
-                                            <TooltipIcon />
-                                        </Tooltip>
-                                    </Space>
-                                }
-                                name="gitUrl"
-                                rules={[
-                                    {required: true, message: "请输入 Git 仓库地址"},
-                                    {
-                                        pattern: /^(https:\/\/|git@|github\.com)/,
-                                        message: "请输入合法的 Git 仓库链接",
-                                    },
-                                ]}
-                            >
-                                <Input
-                                    prefix={<PrefixGlobal />}
-                                    placeholder="https://github.com/username/repo.github.io.git"
-                                />
-                            </Form.Item>
-
-                            <Form.Item
-                                label="分支名称 (Branch)"
-                                name="gitBranch"
-                                rules={[{required: true, message: "请输入分支名称"}]}
-                            >
-                                <Input
-                                    prefix={<PrefixBranches />}
-                                    placeholder="例如: main"
-                                />
-                            </Form.Item>
-
-                            <Form.Item
-                                label="Git 凭证所有者"
-                                name="gitUsername"
-                                rules={[{required: true, message: "请输入用户名"}]}
-                            >
-                                <Input
-                                    prefix={<PrefixUser />}
-                                    placeholder="输入托管平台用户名或邮箱"
-                                />
-                            </Form.Item>
-
-                            <Form.Item
-                                label={
-                                    <Space>
-                                        <span>密码 / 个人访问令牌 (Token)</span>
-                                        <Tooltip title="对于 GitHub，建议使用生成的个人访问令牌 (PAT) 代替明文登录密码以保障安全。">
-                                            <TooltipIcon />
-                                        </Tooltip>
-                                    </Space>
-                                }
-                                name="gitPassword"
-                            >
-                                <Input.Password
-                                    prefix={<PrefixKey />}
-                                    placeholder="输入账户密码或 Access Token"
-                                />
-                            </Form.Item>
-
-                            <Form.Item
-                                label="自定义静态域名"
-                                name="gitAccessBaseUrl"
-                            >
-                                <Input
-                                    prefix={<PrefixGlobal />}
-                                    placeholder="例如: https://username.github.io"
-                                />
-                            </Form.Item>
-
-                            <AdvancedCollapse ghost>
-                                <Collapse.Panel
-                                    header="高级配置 (代理与提交人)"
-                                    key="advanced"
-                                >
-                                    <AdvancedPanelBody>
-                                        <AdvancedDividerFirst orientation={"left" as any}>
-                                            提交者身份
-                                        </AdvancedDividerFirst>
-                                        <Form.Item
-                                            label="提交人用户名"
-                                            name="gitCommitterUsername"
-                                        >
-                                            <Input
-                                                prefix={<PrefixUser />}
-                                                placeholder="例如: ZrLog Bot"
-                                            />
-                                        </Form.Item>
-
-                                        <Form.Item
-                                            label="提交人邮箱"
-                                            name="gitCommitterEmail"
-                                            rules={[
-                                                {
-                                                    type: "email",
-                                                    message: "请输入合法的邮箱地址",
-                                                }
-                                            ]}
-                                        >
-                                            <Input
-                                                prefix={<PrefixMail />}
-                                                placeholder="例如: bot@example.com"
-                                            />
-                                        </Form.Item>
-
-                                        <AdvancedDividerSecond orientation={"left" as any}>
-                                            网络代理
-                                        </AdvancedDividerSecond>
-                                        <Form.Item
-                                            label="HTTP 代理主机"
-                                            name="proxyHttpHost"
-                                        >
-                                            <Input
-                                                prefix={<PrefixGlobal />}
-                                                placeholder="例如: 127.0.0.1"
-                                            />
-                                        </Form.Item>
-
-                                        <Form.Item
-                                            label="HTTP 代理端口"
-                                            name="proxyHttpPort"
-                                            rules={[
-                                                {
-                                                    pattern: /^[0-9]*$/,
-                                                    message: "请输入有效的端口号",
-                                                }
-                                            ]}
-                                        >
-                                            <Input
-                                                prefix={<PrefixApi />}
-                                                placeholder="例如: 7890"
-                                            />
-                                        </Form.Item>
-                                    </AdvancedPanelBody>
-                                </Collapse.Panel>
-                            </AdvancedCollapse>
-                        </StyledCard>
-                    </div>
-                </MainLayoutGrid>
-
-                {/* Mobile Scroll-friendly Sync History Table Card */}
-                <HistoryCard
-                    title={
-                        <HistoryCardTitle>
-                            <Space>
-                                <HistoryOutlined />
-                                <span>同步日志记录</span>
-                            </Space>
-                            <Button
-                                size="small"
-                                icon={<ReloadOutlined />}
-                                onClick={loadHistory}
-                                loading={historyLoading}
-                            >
-                                刷新
-                            </Button>
-                        </HistoryCardTitle>
-                    }
-                    bordered={false}
-                >
-                    <Table
-                        dataSource={historyList}
-                        rowKey="id"
-                        pagination={{ pageSize: 5 }}
-                        size="small"
-                        scroll={{ x: 'max-content' }}
-                        locale={{ emptyText: "暂无同步记录" }}
-                        columns={[
-                            {
-                                title: "同步时间",
-                                dataIndex: "time",
-                                key: "time",
-                                width: 150,
-                                render: (text: string) => <HistoryTableText strong>{text}</HistoryTableText>,
-                            },
-                            {
-                                title: "状态",
-                                dataIndex: "success",
-                                key: "success",
-                                width: 100,
-                                render: (success: boolean) => (
-                                    success ? 
-                                    <Tag color="success" icon={<CheckCircleOutlined />}>成功</Tag> : 
-                                    <Tag color="error" icon={<CloseCircleOutlined />}>失败</Tag>
-                                ),
-                            },
-                            {
-                                title: "推送文件",
-                                dataIndex: "filesCount",
-                                key: "filesCount",
-                                width: 100,
-                                render: (count: number) => <Tag color="blue">{count} 个</Tag>,
-                            },
-                            {
-                                title: "日志详情",
-                                dataIndex: "message",
-                                key: "message",
-                                render: (text: string, record: any) => (
-                                    <HistoryLogText type={record.success ? "secondary" : "danger"}>{text}</HistoryLogText>
-                                ),
-                            },
-                        ]}
-                    />
-                </HistoryCard>
-
-                {/* Footer action row */}
-                <ActionsFooter>
-                    <Button
-                        type="primary"
-                        htmlType="submit"
-                        icon={<SaveOutlined />}
-                        loading={loading}
+            {/* Modal Dialog for Configuration Settings */}
+            <Modal
+                title={
+                    <Space>
+                        <SettingOutlined />
+                        <span>配置静态同步参数</span>
+                    </Space>
+                }
+                open={settingsVisible}
+                onCancel={() => setSettingsVisible(false)}
+                onOk={() => form.submit()}
+                confirmLoading={loading}
+                width={850}
+                okText="保存配置并运行同步"
+                cancelText="取消"
+                destroyOnClose
+            >
+                <FormScrollArea>
+                    <Form
+                        form={form}
+                        layout="vertical"
+                        initialValues={initialValues}
+                        onFinish={handleSave}
+                        requiredMark="optional"
                     >
-                        保存配置并运行同步
-                    </Button>
-                </ActionsFooter>
-            </Form>
+                        <MainLayoutGrid>
+                            {/* Left Column: Basic Settings */}
+                            <div className="layout-col-left">
+                                <StyledCard
+                                    title={<span><SettingOutlined /> 基础同步设置</span>}
+                                    bordered={false}
+                                >
+                                    <Form.Item
+                                        name="syncRemoteType"
+                                        rules={[{required: true}]}
+                                    >
+                                        <Select options={syncRemoteTypeOptions} />
+                                    </Form.Item>
+
+                                    <Divider12 />
+
+                                    <SwitchGroup>
+                                        <SwitchItem>
+                                            <SwitchInfo>
+                                                <SwitchLabel>主题静态文件同步</SwitchLabel>
+                                                <SwitchDesc>
+                                                    同步活跃主题下的 CSS、JS 和图片静态资源。
+                                                </SwitchDesc>
+                                            </SwitchInfo>
+                                            <Form.Item name="syncTemplate" valuePropName="checked" noStyle>
+                                                <Switch size="small" />
+                                            </Form.Item>
+                                        </SwitchItem>
+
+                                        <Divider8 />
+
+                                        <SwitchItem>
+                                            <SwitchInfo>
+                                                <SwitchLabel>静态缓存 HTML 同步</SwitchLabel>
+                                                <SwitchDesc>
+                                                    静态化全站文章与页面 HTML 并同步。
+                                                </SwitchDesc>
+                                            </SwitchInfo>
+                                            <Form.Item name="syncHtml" valuePropName="checked" noStyle>
+                                                <Switch size="small" />
+                                            </Form.Item>
+                                        </SwitchItem>
+
+                                        <Divider8 />
+
+                                        <SwitchItem>
+                                            <SwitchInfo>
+                                                <SwitchLabel>静态附件同步</SwitchLabel>
+                                                <SwitchDesc>
+                                                    同步上传到附件库中的媒体资产。
+                                                </SwitchDesc>
+                                            </SwitchInfo>
+                                            <Form.Item name="syncAttached" valuePropName="checked" noStyle>
+                                                <Switch size="small" />
+                                            </Form.Item>
+                                        </SwitchItem>
+                                    </SwitchGroup>
+                                </StyledCard>
+                            </div>
+
+                            {/* Right Column: Git Configuration */}
+                            <div className="layout-col-right">
+                                <StyledCard
+                                    title={
+                                        <Space>
+                                            <GithubOutlined />
+                                            <span>Git 仓库配置</span>
+                                        </Space>
+                                    }
+                                    bordered={false}
+                                >
+                                    <Form.Item
+                                        label={
+                                            <Space>
+                                                <span>Git 仓库 URL</span>
+                                                <Tooltip title="托管服务 SSH 或 HTTPS 链接。推荐使用 https 配合 Access Token。">
+                                                    <TooltipIcon />
+                                                </Tooltip>
+                                            </Space>
+                                        }
+                                        name="gitUrl"
+                                        rules={[
+                                            {required: true, message: "请输入 Git 仓库地址"},
+                                            {
+                                                pattern: /^(https:\/\/|git@|github\.com)/,
+                                                message: "请输入合法的 Git 仓库链接",
+                                            },
+                                        ]}
+                                    >
+                                        <Input
+                                            prefix={<PrefixGlobal />}
+                                            placeholder="https://github.com/username/repo.github.io.git"
+                                        />
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        label="分支名称 (Branch)"
+                                        name="gitBranch"
+                                        rules={[{required: true, message: "请输入分支名称"}]}
+                                    >
+                                        <Input
+                                            prefix={<PrefixBranches />}
+                                            placeholder="例如: main"
+                                        />
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        label="Git 凭证所有者"
+                                        name="gitUsername"
+                                        rules={[{required: true, message: "请输入用户名"}]}
+                                    >
+                                        <Input
+                                            prefix={<PrefixUser />}
+                                            placeholder="输入托管平台用户名或邮箱"
+                                        />
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        label={
+                                            <Space>
+                                                <span>密码 / 个人访问令牌 (Token)</span>
+                                                <Tooltip title="对于 GitHub，建议使用生成的个人访问令牌 (PAT) 代替明文登录密码以保障安全。">
+                                                    <TooltipIcon />
+                                                </Tooltip>
+                                            </Space>
+                                        }
+                                        name="gitPassword"
+                                    >
+                                        <Input.Password
+                                            prefix={<PrefixKey />}
+                                            placeholder="输入账户密码或 Access Token"
+                                        />
+                                    </Form.Item>
+
+                                    <Form.Item
+                                        label="自定义静态域名"
+                                        name="gitAccessBaseUrl"
+                                    >
+                                        <Input
+                                            prefix={<PrefixGlobal />}
+                                            placeholder="例如: https://username.github.io"
+                                        />
+                                    </Form.Item>
+
+                                    <AdvancedCollapse ghost>
+                                        <Collapse.Panel
+                                            header="高级配置 (代理与提交人)"
+                                            key="advanced"
+                                        >
+                                            <AdvancedPanelBody>
+                                                <AdvancedDividerFirst orientation={"left" as any}>
+                                                    提交者身份
+                                                </AdvancedDividerFirst>
+                                                <Form.Item
+                                                    label="提交人用户名"
+                                                    name="gitCommitterUsername"
+                                                >
+                                                    <Input
+                                                        prefix={<PrefixUser />}
+                                                        placeholder="例如: ZrLog Bot"
+                                                    />
+                                                </Form.Item>
+
+                                                <Form.Item
+                                                    label="提交人邮箱"
+                                                    name="gitCommitterEmail"
+                                                    rules={[
+                                                        {
+                                                            type: "email",
+                                                            message: "请输入合法的邮箱地址",
+                                                        }
+                                                    ]}
+                                                >
+                                                    <Input
+                                                        prefix={<PrefixMail />}
+                                                        placeholder="例如: bot@example.com"
+                                                    />
+                                                </Form.Item>
+
+                                                <AdvancedDividerSecond orientation={"left" as any}>
+                                                    网络代理
+                                                </AdvancedDividerSecond>
+                                                <Form.Item
+                                                    label="HTTP 代理主机"
+                                                    name="proxyHttpHost"
+                                                >
+                                                    <Input
+                                                        prefix={<PrefixGlobal />}
+                                                        placeholder="例如: 127.0.0.1"
+                                                    />
+                                                </Form.Item>
+
+                                                <Form.Item
+                                                    label="HTTP 代理端口"
+                                                    name="proxyHttpPort"
+                                                    rules={[
+                                                        {
+                                                            pattern: /^[0-9]*$/,
+                                                            message: "请输入有效的端口号",
+                                                        }
+                                                    ]}
+                                                >
+                                                    <Input
+                                                        prefix={<PrefixApi />}
+                                                        placeholder="例如: 7890"
+                                                    />
+                                                </Form.Item>
+                                            </AdvancedPanelBody>
+                                        </Collapse.Panel>
+                                    </AdvancedCollapse>
+                                </StyledCard>
+                            </div>
+                        </MainLayoutGrid>
+                    </Form>
+                </FormScrollArea>
+            </Modal>
         </Shell>
     );
 };
