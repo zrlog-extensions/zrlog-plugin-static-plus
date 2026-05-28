@@ -275,12 +275,24 @@ const Divider8 = styled(Divider)`
   margin: 8px 0 !important;
 `;
 
+const getCookie = (name: string): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+        const val = parts.pop()?.split(';').shift() || null;
+        return val ? decodeURIComponent(val) : null;
+    }
+    return null;
+}
+
+const getPrimaryColor = () => getCookie("Admin-Color-Primary") || "#1677ff";
+
 const AdvancedCollapse = styled(Collapse)`
   margin-top: 12px !important;
 
   .ant-collapse-header {
       font-size: 13px !important;
-      color: #1677ff !important;
+      color: ${getPrimaryColor()} !important;
       font-weight: 500 !important;
       padding: 8px 0 !important;
   }

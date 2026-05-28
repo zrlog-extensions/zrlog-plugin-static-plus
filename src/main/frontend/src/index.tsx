@@ -45,9 +45,20 @@ const loadFromDocument = (): StaticPlusConfig | null => {
     }
 }
 
+const getCookie = (name: string): string | null => {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) {
+        const val = parts.pop()?.split(';').shift() || null;
+        return val ? decodeURIComponent(val) : null;
+    }
+    return null;
+}
+
 const Index = () => {
     const [config] = useState<StaticPlusConfig | null>(loadFromDocument);
     const [isDark, setIsDark] = useState<boolean>(false);
+    const [primaryColor, setPrimaryColor] = useState<string>("#1677ff");
 
     useEffect(() => {
         const checkDarkMode = () => {
@@ -61,6 +72,13 @@ const Index = () => {
         return () => observer.disconnect();
     }, []);
 
+    useEffect(() => {
+        const color = getCookie("Admin-Color-Primary");
+        if (color) {
+            setPrimaryColor(color);
+        }
+    }, []);
+
     const safeConfig = config || {};
 
     return (
@@ -68,6 +86,9 @@ const Index = () => {
             locale={zhCN}
             theme={{
                 algorithm: isDark ? darkAlgorithm : defaultAlgorithm,
+                token: {
+                    colorPrimary: primaryColor,
+                }
             }}
         >
             <StyleProvider transformers={[legacyLogicalPropertiesTransformer]}>
