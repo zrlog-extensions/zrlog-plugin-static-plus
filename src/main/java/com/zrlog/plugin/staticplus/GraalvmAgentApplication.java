@@ -4,6 +4,7 @@ import com.zrlog.plugin.common.IOUtil;
 import com.zrlog.plugin.common.PluginNativeImageUtils;
 import com.zrlog.plugin.common.vo.UploadFile;
 import com.zrlog.plugin.staticplus.controller.StaticPlusController;
+import com.zrlog.plugin.staticplus.service.StaticPlusSyncService;
 import com.zrlog.plugin.staticplus.service.UploadService;
 import com.zrlog.plugin.staticplus.service.UploadToPrivateService;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
@@ -45,6 +46,7 @@ public class GraalvmAgentApplication {
         }
         UploadService.class.newInstance();
         UploadToPrivateService.class.newInstance();
+        StaticPlusSyncService.class.newInstance();
         Application.main(args);
 
     }

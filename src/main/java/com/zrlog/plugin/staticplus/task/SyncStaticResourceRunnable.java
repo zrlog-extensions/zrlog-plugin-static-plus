@@ -26,8 +26,11 @@ public class SyncStaticResourceRunnable implements Runnable {
     private final IOSession session;
 
     private final String cacheKeyMapKey = "cacheMap";
-    private final ReentrantLock reentrantLock = new ReentrantLock();
-    private final AtomicLong version = new AtomicLong();
+    private static final ReentrantLock REENTRANT_LOCK = new ReentrantLock();
+    private static final AtomicLong VERSION = new AtomicLong();
+    private boolean success = true;
+    private int filesCount;
+    private String message = "";
 
     public SyncStaticResourceRunnable(IOSession session) {
         this.session = session;
@@ -49,15 +52,19 @@ public class SyncStaticResourceRunnable implements Runnable {
 
     @Override
     public void run() {
-        long expectVersion = version.incrementAndGet();
-        reentrantLock.lock();
+        long expectVersion = VERSION.incrementAndGet();
+        REENTRANT_LOCK.lock();
         try {
-            if (!Objects.equals(version.get(), expectVersion)) {
+            if (!Objects.equals(VERSION.get(), expectVersion)) {
                 return;
             }
             Map<String, Object> map = new HashMap<>();
             map.put("key", "syncTemplate,syncHtml,syncRemoteType," + cacheKeyMapKey);
             Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, map, ActionType.GET_WEBSITE, Map.class);
+            if (responseMap == null) {
+                markResult(true, 0, "未读取到静态同步配置。");
+                return;
+            }
             //reload cache
             Map<String, String> fileInfoCacheMap = preloadCache(responseMap);
             TemplatePath templatePath = session.getResponseSync(ContentType.JSON, new HashMap<>(), ActionType.CURRENT_TEMPLATE, TemplatePath.class);
@@ -67,24 +74,32 @@ public class SyncStaticResourceRunnable implements Runnable {
             uploadFiles.addAll(SyncFileInfoCacheUtils.templateUploadFiles(blogRunTime, responseMap, templatePath, copyFileInfoMap));
             uploadFiles.addAll(SyncFileInfoCacheUtils.cacheFiles(blogRunTime, responseMap, copyFileInfoMap));
             if (uploadFiles.isEmpty()) {
+                markResult(true, 0, "同步已完成，无新变动资源需要推送。");
                 return;
             }
             String syncRemoteType = responseMap.get("syncRemoteType");
             if (Objects.isNull(syncRemoteType)) {
+                markResult(true, 0, "未配置静态资源远程同步类型。");
                 return;
             }
             Map<String, Object> configMapRequest = new HashMap<>();
             configMapRequest.put("key", syncRemoteType);
             Map<String, String> configResponse = (Map<String, String>) session.getResponseSync(ContentType.JSON, configMapRequest, ActionType.GET_WEBSITE, Map.class);
+            if (configResponse == null) {
+                markResult(true, 0, "未读取到 " + syncRemoteType + " 同步配置。");
+                return;
+            }
             if (Objects.equals(syncRemoteType, "git")) {
                 String gitConfig = configResponse.get(syncRemoteType);
                 if (Objects.isNull(gitConfig) || gitConfig.trim().isEmpty()) {
+                    markResult(true, 0, "未配置 git 同步信息。");
                     return;
                 }
                 try (FileManage fileManage = new GitFileManageImpl(gitConfig, uploadFiles, session)) {
                     List<UploadFile> uploadedFiles = fileManage.doSync();
                     if (uploadedFiles.isEmpty()) {
-                        recordSyncHistory(true, 0, "同步已完成，无新变动资源需要推送。");
+                        markResult(true, 0, "同步已完成，无新变动资源需要推送。");
+                        recordSyncHistory(success, filesCount, message);
                         return;
                     }
                     for (UploadFile uploadFile : uploadedFiles) {
@@ -92,15 +107,25 @@ public class SyncStaticResourceRunnable implements Runnable {
                         fileInfoCacheMap.put(key, copyFileInfoMap.get(key));
                     }
                     saveCacheToDb(fileInfoCacheMap);
-                    recordSyncHistory(true, uploadedFiles.size(), "成功推送了 " + uploadedFiles.size() + " 个新增/变更资源。");
+                    markResult(true, uploadedFiles.size(), "成功推送了 " + uploadedFiles.size() + " 个新增/变更资源。");
+                    recordSyncHistory(success, filesCount, message);
                 }
+            } else {
+                markResult(true, 0, "暂不支持 " + syncRemoteType + " 同步类型。");
             }
         } catch (Exception e) {
             LOGGER.warning("Sync error " + e.getMessage());
-            recordSyncHistory(false, 0, "同步失败: " + e.getMessage());
+            markResult(false, 0, "同步失败: " + e.getMessage());
+            recordSyncHistory(success, filesCount, message);
         } finally {
-            reentrantLock.unlock();
+            REENTRANT_LOCK.unlock();
         }
+    }
+
+    private void markResult(boolean success, int filesCount, String message) {
+        this.success = success;
+        this.filesCount = filesCount;
+        this.message = message;
     }
 
     private void recordSyncHistory(boolean success, int filesCount, String message) {
@@ -137,5 +162,16 @@ public class SyncStaticResourceRunnable implements Runnable {
         }
     }
 
+    public boolean isSuccess() {
+        return success;
+    }
+
+    public int getFilesCount() {
+        return filesCount;
+    }
+
+    public String getMessage() {
+        return message;
+    }
 
 }
