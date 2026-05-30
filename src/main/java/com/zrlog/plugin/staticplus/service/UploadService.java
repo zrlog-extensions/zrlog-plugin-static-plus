@@ -26,8 +26,8 @@ import java.util.logging.Logger;
 @Capability(
         key = "staticPlus.upload",
         type = "service",
-        label = "上传静态资源",
-        description = "上传文章附件或生成资源到静态化远端存储",
+        label = "上传到静态资源仓库",
+        description = "上传文章附件和生成资源到配置的静态资源仓库。",
         exposure = {"internal"},
         timeoutSeconds = 120
 )

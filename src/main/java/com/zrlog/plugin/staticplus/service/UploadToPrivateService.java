@@ -7,8 +7,8 @@ import com.zrlog.plugin.api.Service;
 @Capability(
         key = "staticPlus.uploadPrivate",
         type = "service",
-        label = "上传私有静态资源",
-        description = "上传私有附件或生成资源到静态化远端存储",
+        label = "上传到私有静态资源仓库",
+        description = "上传备份文件等私有资源到配置的静态资源仓库。",
         exposure = {"internal"},
         timeoutSeconds = 120
 )
