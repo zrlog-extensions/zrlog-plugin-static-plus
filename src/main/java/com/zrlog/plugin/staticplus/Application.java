@@ -5,6 +5,7 @@ import com.zrlog.plugin.client.NioClient;
 import com.zrlog.plugin.render.SimpleTemplateRender;
 import com.zrlog.plugin.staticplus.controller.StaticPlusController;
 import com.zrlog.plugin.staticplus.handle.ConnectHandler;
+import com.zrlog.plugin.staticplus.service.StaticPlusRefreshCacheService;
 import com.zrlog.plugin.staticplus.service.StaticPlusSyncService;
 import com.zrlog.plugin.staticplus.service.UploadService;
 import com.zrlog.plugin.staticplus.service.UploadToPrivateService;
@@ -29,6 +30,7 @@ public class Application {
         classList.add(StaticPlusController.class);
         new NioClient(connectHandler, new SimpleTemplateRender(), new StaticPlusClientActionHandler(connectHandler))
                 .connectServer(args, classList, StaticPlusPluginAction.class,
-                        Arrays.asList(UploadService.class, UploadToPrivateService.class, StaticPlusSyncService.class));
+                        Arrays.asList(UploadService.class, UploadToPrivateService.class, StaticPlusSyncService.class,
+                                StaticPlusRefreshCacheService.class));
     }
 }
