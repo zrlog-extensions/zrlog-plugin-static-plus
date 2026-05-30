@@ -63,11 +63,11 @@ public class StaticPlusController {
         session.sendJsonMsg(keyMap, ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
             Map map = new Gson().fromJson(msgPacket.getDataStr(), Map.class);
             Map<String, Object> data = new HashMap<>();
-            data.put("theme", Objects.equals(requestInfo.getHeader().get("Dark-Mode"), "true") ? "dark" : "light");
+            data.put("theme", requestInfo.isDarkMode() ? "dark" : "light");
             if (Objects.isNull(map.get("syncRemoteType"))) {
                 map.put("syncRemoteType", "git");
             }
-            map.put("adminColorPrimary", requestInfo.getHeader().get("Admin-Color-Primary"));
+            map.put("adminColorPrimary", requestInfo.getAdminColorPrimary());
             data.put("data", new Gson().toJson(map));
             session.responseHtml("/templates/index", data, requestPacket.getMethodStr(), requestPacket.getMsgId());
         });
