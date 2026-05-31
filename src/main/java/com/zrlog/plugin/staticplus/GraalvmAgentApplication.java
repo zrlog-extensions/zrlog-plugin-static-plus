@@ -1,15 +1,14 @@
 package com.zrlog.plugin.staticplus;
 
+import com.zrlog.plugin.RunConstants;
 import com.zrlog.plugin.common.IOUtil;
 import com.zrlog.plugin.common.PluginNativeImageUtils;
 import com.zrlog.plugin.common.vo.UploadFile;
 import com.zrlog.plugin.staticplus.controller.StaticPlusController;
-import com.zrlog.plugin.staticplus.service.StaticPlusSyncService;
-import com.zrlog.plugin.staticplus.service.UploadService;
-import com.zrlog.plugin.staticplus.service.UploadToPrivateService;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
 import com.zrlog.plugin.staticplus.sync.vo.CreateFileInfoVO;
 import com.zrlog.plugin.staticplus.sync.vo.GitRemoteInfo;
+import com.zrlog.plugin.type.RunType;
 
 import java.io.File;
 import java.io.IOException;
@@ -22,6 +21,7 @@ public class GraalvmAgentApplication {
 
 
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException {
+        RunConstants.runType = RunType.AGENT;
         String basePath = System.getProperty("user.dir").replace("\\target", "").replace("/target", "");
         File file = new File(basePath + "/src/main/resources");
         PluginNativeImageUtils.doLoopResourceLoad(file.listFiles(), file.getPath() + "/", "/");
@@ -44,9 +44,6 @@ public class GraalvmAgentApplication {
         } catch (Exception e) {
             e.printStackTrace();
         }
-        UploadService.class.newInstance();
-        UploadToPrivateService.class.newInstance();
-        StaticPlusSyncService.class.newInstance();
         Application.main(args);
 
     }
