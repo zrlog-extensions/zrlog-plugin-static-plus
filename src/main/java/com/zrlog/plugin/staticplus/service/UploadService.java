@@ -29,6 +29,7 @@ import java.util.logging.Logger;
         label = "上传到静态资源仓库",
         description = "上传文章附件和生成资源到配置的静态资源仓库。",
         exposure = {"internal"},
+        riskLevel = "medium",
         timeoutSeconds = 120
 )
 public class UploadService implements IPluginService {

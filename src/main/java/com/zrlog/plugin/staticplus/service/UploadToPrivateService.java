@@ -10,6 +10,7 @@ import com.zrlog.plugin.api.Service;
         label = "上传到私有静态资源仓库",
         description = "上传备份文件等私有资源到配置的静态资源仓库。",
         exposure = {"internal"},
+        riskLevel = "medium",
         timeoutSeconds = 120
 )
 public class UploadToPrivateService extends UploadService {

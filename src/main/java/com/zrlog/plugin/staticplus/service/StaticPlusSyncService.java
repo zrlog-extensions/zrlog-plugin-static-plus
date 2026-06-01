@@ -1,6 +1,7 @@
 package com.zrlog.plugin.staticplus.service;
 
 import com.zrlog.plugin.IOSession;
+import com.zrlog.plugin.api.Capability;
 import com.zrlog.plugin.api.IPluginService;
 import com.zrlog.plugin.api.ScheduledCapability;
 import com.zrlog.plugin.api.Service;
@@ -13,6 +14,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service("staticPlus.sync")
+@Capability(key = "staticPlus.sync", riskLevel = "medium")
 @ScheduledCapability(
         key = "staticPlus.sync",
         label = "同步静态化资源",
