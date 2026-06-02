@@ -2,6 +2,7 @@ import {
     Button,
     Card,
     Form,
+    Grid,
     Input,
     Select,
     Switch,
@@ -77,8 +78,12 @@ const Shell = styled.div`
   padding: 20px 16px;
   box-sizing: border-box;
 
-  @media (max-width: 768px) {
-      padding: 12px 10px;
+  @media (max-width: 1024px) {
+      padding: 16px 12px;
+  }
+
+  @media (max-width: 575px) {
+      padding: 12px;
   }
 `;
 
@@ -107,7 +112,7 @@ const HeaderContent = styled.div`
   align-items: center;
   gap: 16px;
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
       flex-direction: column;
       align-items: flex-start;
       gap: 12px;
@@ -142,7 +147,7 @@ const MainLayoutGrid = styled.div`
   gap: 16px;
   margin-bottom: 16px;
 
-  @media (max-width: 768px) {
+  @media (max-width: 1024px) {
       grid-template-columns: 1fr;
       gap: 12px;
   }
@@ -163,7 +168,10 @@ const StyledCard = styled(Card)`
 
   .ant-card-body {
       padding: 16px !important;
-      @media (max-width: 768px) {
+      @media (max-width: 1024px) {
+          padding: 14px !important;
+      }
+      @media (max-width: 575px) {
           padding: 12px !important;
       }
   }
@@ -313,6 +321,9 @@ const syncRemoteTypeOptions = [
 ];
 
 const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
+    const screens = Grid.useBreakpoint();
+    const isPhone = Boolean(screens.xs && !screens.sm);
+    const isCompact = !screens.lg;
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm<FormValues>();
     const [messageApi, contextHolder] = message.useMessage();
@@ -443,11 +454,12 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                             查看静态资源同步历史。可在“配置同步参数”中修改 Git 凭据和同步范围。
                         </Paragraph>
                     </div>
-                    <Space>
+                    <Space wrap style={{width: isPhone ? "100%" : undefined}}>
                         <Button
                             icon={<ReloadOutlined />}
                             onClick={loadHistory}
                             loading={historyLoading}
+                            style={isPhone ? {flex: 1} : undefined}
                         >
                             刷新
                         </Button>
@@ -455,6 +467,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                             type="primary"
                             icon={<SettingOutlined />}
                             onClick={() => setSettingsVisible(true)}
+                            style={isPhone ? {flex: 1} : undefined}
                         >
                             配置同步参数
                         </Button>
@@ -529,7 +542,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                 onCancel={() => setSettingsVisible(false)}
                 onOk={() => form.submit()}
                 confirmLoading={loading}
-                width={850}
+                width={isPhone ? "calc(100vw - 24px)" : isCompact ? "92vw" : 850}
                 okText="保存配置并运行同步"
                 cancelText="取消"
                 destroyOnClose
