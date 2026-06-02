@@ -1,8 +1,16 @@
-# zrlog plugin static plus 
+# zrlog-plugin-static-plus
 
-> 增强 zrlog 静态化的能力，用于自动将 zrlog 生成静态 html 或者上传的静态资源（图片/视频/文件）同步到第三方存储（不含公有化存储方案）
+ZrLog 静态资源同步插件。将主题静态资源、静态缓存 HTML 文件和附件同步到配置的 Git 远端仓库。
 
-## 开发环境打包
+## 功能
+
+- 配置 Git 远端仓库、分支和访问凭据
+- 同步主题静态资源
+- 同步静态缓存 HTML 文件
+- 同步上传到附件库中的媒体资源
+- 记录每次同步的文件数量和执行结果
+
+## 构建
 
 ```shell
 export JAVA_HOME=${HOME}/dev/graalvm-jdk-latest
@@ -14,5 +22,5 @@ export PATH=${JAVA_HOME}/bin:$PATH
 - [x] github + cloudflare
 - [ ] git pages（仓库）
 - [ ] Nginx + SFTP
-- [ ] Nginx + FTP (优先级低，传统 FTP 在淘汰的边缘上)
+- [ ] Nginx + FTP
 - [ ] 其他文件传输协议（webdav, nas, smb）

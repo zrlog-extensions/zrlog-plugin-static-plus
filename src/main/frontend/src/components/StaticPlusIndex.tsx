@@ -412,7 +412,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
             if (data.success || data.status === 200) {
                 messageApi.success({
-                    content: "配置保存成功，系统已在后台运行同步。",
+                    content: "配置已保存，并已开始执行同步。",
                     duration: 3,
                 });
                 setSettingsVisible(false);
@@ -440,7 +440,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                     <div>
                         <Title level={3}>静态同步日志与状态</Title>
                         <Paragraph type="secondary">
-                            查看博客远程自动同步历史。您可在“配置同步参数”中修改凭据和静态化规则。
+                            查看静态资源同步历史。可在“配置同步参数”中修改 Git 凭据和同步范围。
                         </Paragraph>
                     </div>
                     <Space>
@@ -617,7 +617,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                         label={
                                             <Space>
                                                 <span>Git 仓库 URL</span>
-                                                <Tooltip title="托管服务 SSH 或 HTTPS 链接。推荐使用 https 配合 Access Token。">
+                                                <Tooltip title="Git 服务的 SSH 或 HTTPS 链接。HTTPS 方式通常需要配合 Access Token。">
                                                     <TooltipIcon />
                                                 </Tooltip>
                                             </Space>
@@ -655,7 +655,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                     >
                                         <Input
                                             prefix={<PrefixUser />}
-                                            placeholder="输入托管平台用户名或邮箱"
+                                            placeholder="输入 Git 服务用户名或邮箱"
                                         />
                                     </Form.Item>
 
