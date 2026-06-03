@@ -1,5 +1,5 @@
 import {legacyLogicalPropertiesTransformer, StyleProvider} from "@ant-design/cssinjs";
-import {App, ConfigProvider, theme} from "antd";
+import {App, ConfigProvider, Layout, theme} from "antd";
 import zhCN from "antd/es/locale/zh_CN";
 import {useEffect, useState} from "react";
 import {createRoot} from "react-dom/client";
@@ -7,6 +7,7 @@ import {createGlobalStyle} from "styled-components";
 import AppBase from "./AppBase";
 
 const {darkAlgorithm, defaultAlgorithm} = theme;
+const {Content} = Layout;
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -76,10 +77,12 @@ const Index = () => {
             }}
         >
             <StyleProvider transformers={[legacyLogicalPropertiesTransformer]}>
-                <App>
-                    <GlobalStyle />
-                    <AppBase config={safeConfig} />
-                </App>
+                <Content>
+                    <App>
+                        <GlobalStyle />
+                        <AppBase config={safeConfig} />
+                    </App>
+                </Content>
             </StyleProvider>
         </ConfigProvider>
     );
