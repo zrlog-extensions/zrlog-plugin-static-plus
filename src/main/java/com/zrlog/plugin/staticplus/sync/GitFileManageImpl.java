@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class GitFileManageImpl implements FileManage {
@@ -189,8 +190,7 @@ public class GitFileManageImpl implements FileManage {
             LOGGER.info("Git push success");
             return uploadedFiles;
         } catch (Exception e) {
-            e.printStackTrace();
-            LoggerUtil.getLogger(GitFileManageImpl.class).warning("Git [sync] push error " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Git [sync] push error", e);
             return new ArrayList<>();
         } finally {
             lock.unlock();
