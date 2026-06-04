@@ -2,6 +2,7 @@ package com.zrlog.plugin.staticplus;
 
 import com.zrlog.plugin.RunConstants;
 import com.zrlog.plugin.common.IOUtil;
+import com.zrlog.plugin.common.LoggerUtil;
 import com.zrlog.plugin.common.PluginNativeImageUtils;
 import com.zrlog.plugin.common.vo.UploadFile;
 import com.zrlog.plugin.staticplus.controller.StaticPlusController;
@@ -16,9 +17,12 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class GraalvmAgentApplication {
 
+    private static final Logger LOGGER = LoggerUtil.getLogger(GraalvmAgentApplication.class);
 
     public static void main(String[] args) throws IOException, InstantiationException, IllegalAccessException {
         RunConstants.runType = RunType.AGENT;
@@ -36,13 +40,13 @@ public class GraalvmAgentApplication {
             list.add(uploadFile);
             new GitFileManageImpl("{'url':'https://github.com/94fzb/zrlog-plugin-static-plus','branch':'main','username':'94fzb','password':'pwd'}", list, null).doSync();
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Warm up git sync failed", e);
         }
         try {
             PluginNativeImageUtils.usedGsonObject();
             PluginNativeImageUtils.gsonNativeAgentByClazz(Arrays.asList(CreateFileInfoVO.class, GitRemoteInfo.class));
         } catch (Exception e) {
-            e.printStackTrace();
+            LOGGER.log(Level.WARNING, "Warm up static plus native image metadata failed", e);
         }
         Application.main(args);
 

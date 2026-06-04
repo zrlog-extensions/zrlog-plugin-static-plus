@@ -28,7 +28,6 @@ public class StaticPlusController {
     }
 
     public void githubEvent() {
-        //LoggerUtil.getLogger(StaticPlusController.class).info(requestInfo.simpleParam().toString());
         //handle action
         Map<String, Object> map = new HashMap<>();
         map.put("success", true);
