@@ -213,38 +213,35 @@ public class GitFileManageImpl implements FileManage {
         if (Objects.isNull(gitRemoteInfo.getAccessBaseUrl())) {
             return key;
         }
-        try {
-            List<UploadFile> fileList = new ArrayList<>();
-            UploadFile uploadFile = new UploadFile();
-            uploadFile.setFile(file);
-            uploadFile.setFileKey(key);
-            uploadFile.setRefresh(false);
-            fileList.add(uploadFile);
-            UploadFile uploadFileJson = new UploadFile();
-            File buildFile = new File(System.getProperty("java.io.tmpdir") + "/" + System.currentTimeMillis() + "/create-file-info.json");
-            buildFile.getParentFile().mkdirs();
-            CreateFileInfoVO createFileInfoVO = new CreateFileInfoVO();
-            createFileInfoVO.setFileKey(key);
-            createFileInfoVO.setMd5sum(SecurityUtils.md5ByFile(file));
-            String jsonStr = new Gson().toJson(createFileInfoVO);
-            IOUtil.writeStrToFile(jsonStr, buildFile);
-            uploadFileJson.setFile(buildFile);
-            uploadFileJson.setFileKey(buildFile.getName());
-            uploadFileJson.setRefresh(false);
-            fileList.add(uploadFileJson);
-            doSyncByUploadFiles(fileList);
-            if (Objects.nonNull(gitRemoteInfo.getAccessBaseUrl()) && !gitRemoteInfo.getAccessBaseUrl().isEmpty()) {
-                boolean result = SyncUtils.checkFileSyncs(gitRemoteInfo.getAccessBaseUrl() + "/" + buildFile.getName(), jsonStr, session);
-                if (result) {
-                    LOGGER.info("Files sync success");
-                }
+        List<UploadFile> fileList = new ArrayList<>();
+        UploadFile uploadFile = new UploadFile();
+        uploadFile.setFile(file);
+        uploadFile.setFileKey(key);
+        uploadFile.setRefresh(false);
+        fileList.add(uploadFile);
+        UploadFile uploadFileJson = new UploadFile();
+        File buildFile = new File(System.getProperty("java.io.tmpdir") + "/" + System.currentTimeMillis() + "/create-file-info.json");
+        buildFile.getParentFile().mkdirs();
+        CreateFileInfoVO createFileInfoVO = new CreateFileInfoVO();
+        createFileInfoVO.setFileKey(key);
+        createFileInfoVO.setMd5sum(SecurityUtils.md5ByFile(file));
+        String jsonStr = new Gson().toJson(createFileInfoVO);
+        IOUtil.writeStrToFile(jsonStr, buildFile);
+        uploadFileJson.setFile(buildFile);
+        uploadFileJson.setFileKey(buildFile.getName());
+        uploadFileJson.setRefresh(false);
+        fileList.add(uploadFileJson);
+        doSyncByUploadFiles(fileList);
+        if (Objects.nonNull(gitRemoteInfo.getAccessBaseUrl()) && !gitRemoteInfo.getAccessBaseUrl().isEmpty()) {
+            boolean result = SyncUtils.checkFileSyncs(gitRemoteInfo.getAccessBaseUrl() + "/" + buildFile.getName(), jsonStr, session);
+            if (result) {
+                LOGGER.info("Files sync success");
             }
-            if (gitRemoteInfo.getAccessBaseUrl().endsWith("/")) {
-                return gitRemoteInfo.getAccessBaseUrl() + key;
-            }
-            return gitRemoteInfo.getAccessBaseUrl() + "/" + key;
-        } finally {
         }
+        if (gitRemoteInfo.getAccessBaseUrl().endsWith("/")) {
+            return gitRemoteInfo.getAccessBaseUrl() + key;
+        }
+        return gitRemoteInfo.getAccessBaseUrl() + "/" + key;
     }
 
     @Override
