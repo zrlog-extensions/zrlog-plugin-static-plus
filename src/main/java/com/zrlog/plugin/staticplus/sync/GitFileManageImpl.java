@@ -20,13 +20,14 @@ import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
+import java.nio.channels.FileChannel;
+import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -34,8 +35,6 @@ public class GitFileManageImpl implements FileManage {
 
     private static final Logger LOGGER = LoggerUtil.getLogger(GitFileManageImpl.class);
 
-    private static final Lock lock = new ReentrantLock();
-    private static final Lock createLock = new ReentrantLock();
 
     private final GitRemoteInfo gitRemoteInfo;
     private final List<UploadFile> syncFiles;
@@ -45,14 +44,17 @@ public class GitFileManageImpl implements FileManage {
     private static final ProxySelector defaultProxySelector = ProxySelector.getDefault();
     private final PersonIdent committerAuthor;
     private final IOSession session;
+    private final File syncLockFile;
 
 
     public GitFileManageImpl(String configJsonStr, List<UploadFile> syncFiles, IOSession session) {
         this.gitRemoteInfo = new Gson().fromJson(configJsonStr, GitRemoteInfo.class);
         this.syncFiles = syncFiles;
         this.usernamePasswordCredentialsProvider = new UsernamePasswordCredentialsProvider(gitRemoteInfo.getUsername(), gitRemoteInfo.getPassword());
-        String cloneDirectoryPath = System.getProperty("user.dir") + "/" + new File(URI.create(gitRemoteInfo.getUrl()).getPath()).getName();
+        String cloneDirectoryName = new File(URI.create(gitRemoteInfo.getUrl()).getPath()).getName() + "-" + Integer.toHexString(Objects.hash(gitRemoteInfo.getUrl()));
+        String cloneDirectoryPath = System.getProperty("user.dir") + "/" + cloneDirectoryName;
         this.repoDir = new File(cloneDirectoryPath);
+        this.syncLockFile = new File(System.getProperty("java.io.tmpdir"), "zrlog-staticplus-git-sync-" + cloneDirectoryName + ".lock");
         this.committerAuthor = new PersonIdent(Objects.requireNonNullElse(gitRemoteInfo.getGitCommitterUsername(), "static-plus-robot"), Objects.requireNonNullElse(gitRemoteInfo.getGitCommitterEmail(), "static-plus-robot@zrlog.com"));
         this.session = session;
     }
@@ -150,50 +152,45 @@ public class GitFileManageImpl implements FileManage {
         if (Objects.isNull(files) || files.isEmpty()) {
             return new ArrayList<>();
         }
-        lock.lock();
         List<UploadFile> uploadedFiles = new ArrayList<>();
         try {
-            setupProxy();
-            initGit();
-            //检出分支
-            checkout(git, gitRemoteInfo.getBranch(), usernamePasswordCredentialsProvider);
-            try {
+            try (FileChannel lockFileChannel = FileChannel.open(syncLockFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
+                 FileLock syncLock = lockFileChannel.lock()) {
+                setupProxy();
+                initGit();
+                //检出分支
+                checkout(git, gitRemoteInfo.getBranch(), usernamePasswordCredentialsProvider);
                 git.pull().setCredentialsProvider(usernamePasswordCredentialsProvider).setRemote("origin").setRemoteBranchName(gitRemoteInfo.getBranch()).call();
-            } catch (Exception e) {
-                LoggerUtil.getLogger(GitFileManageImpl.class).warning("Git [sync] pull error " + e.getMessage());
-            }
-            git.remoteAdd().setName("origin");
-            long start = System.currentTimeMillis();
-            for (UploadFile e : files) {
-                if (!e.getFile().exists()) {
-                    continue;
+                git.remoteAdd().setName("origin");
+                long start = System.currentTimeMillis();
+                for (UploadFile e : files) {
+                    if (!e.getFile().exists()) {
+                        continue;
+                    }
+                    File targetFile = new File(repoDir + "/" + e.getFileKey());
+                    if (!targetFile.getParentFile().exists()) {
+                        targetFile.getParentFile().mkdirs();
+                    }
+                    if (!Objects.equals(targetFile, e.getFile())) {
+                        Files.copy(e.getFile().toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
+                    }
+                    if (e.getFileKey().startsWith("/")) {
+                        git.add().addFilepattern(e.getFileKey().substring(1)).call();
+                    } else {
+                        git.add().addFilepattern(e.getFileKey()).call();
+                    }
+                    uploadedFiles.add(e);
                 }
-                File targetFile = new File(repoDir + "/" + e.getFileKey());
-                if (!targetFile.getParentFile().exists()) {
-                    targetFile.getParentFile().mkdirs();
-                }
-                if (!Objects.equals(targetFile, e.getFile())) {
-                    Files.copy(e.getFile().toPath(), targetFile.toPath(), StandardCopyOption.REPLACE_EXISTING);
-                }
-                if (e.getFileKey().startsWith("/")) {
-                    git.add().addFilepattern(e.getFileKey().substring(1)).call();
-                } else {
-                    git.add().addFilepattern(e.getFileKey()).call();
-                }
-                uploadedFiles.add(e);
-            }
-            //git.add().addFilepattern(".").call();
-            LOGGER.info("Git add used time " + (System.currentTimeMillis() - start) + "ms");
+                LOGGER.info("Git add used time " + (System.currentTimeMillis() - start) + "ms");
 
-            git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
-            git.push().setCredentialsProvider(usernamePasswordCredentialsProvider).setRemote("origin").setRefSpecs(new RefSpec(gitRemoteInfo.getBranch() + ":" + gitRemoteInfo.getBranch())).call();
-            LOGGER.info("Git push success");
+                git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
+                git.push().setCredentialsProvider(usernamePasswordCredentialsProvider).setRemote("origin").setRefSpecs(new RefSpec(gitRemoteInfo.getBranch() + ":" + gitRemoteInfo.getBranch())).call();
+                LOGGER.info("Git push success");
+            }
             return uploadedFiles;
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Git [sync] push error", e);
             return new ArrayList<>();
-        } finally {
-            lock.unlock();
         }
     }
 
@@ -216,7 +213,6 @@ public class GitFileManageImpl implements FileManage {
         if (Objects.isNull(gitRemoteInfo.getAccessBaseUrl())) {
             return key;
         }
-        createLock.lock();
         try {
             List<UploadFile> fileList = new ArrayList<>();
             UploadFile uploadFile = new UploadFile();
@@ -248,7 +244,6 @@ public class GitFileManageImpl implements FileManage {
             }
             return gitRemoteInfo.getAccessBaseUrl() + "/" + key;
         } finally {
-            createLock.unlock();
         }
     }
 
