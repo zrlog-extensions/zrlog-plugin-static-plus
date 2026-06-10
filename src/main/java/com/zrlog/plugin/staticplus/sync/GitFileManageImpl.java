@@ -12,6 +12,7 @@ import com.zrlog.plugin.staticplus.sync.vo.GitRemoteInfo;
 import com.zrlog.plugin.type.RunType;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RefSpec;
@@ -23,11 +24,13 @@ import java.net.*;
 import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 import java.nio.file.Files;
+import java.util.HashSet;
 import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
@@ -140,6 +143,20 @@ public class GitFileManageImpl implements FileManage {
         LOGGER.info("Git work with proxy: " + gitRemoteInfo.getProxyHttpHost() + ":" + gitRemoteInfo.getProxyHttpPort());
     }
 
+    private Set<String> collectStagedFileKeys() throws GitAPIException {
+        Set<String> stagedFileKeys = new HashSet<>();
+        for (DiffEntry diffEntry : git.diff().setCached(true).call()) {
+            String path = diffEntry.getNewPath();
+            if (Objects.equals(path, DiffEntry.DEV_NULL)) {
+                path = diffEntry.getOldPath();
+            }
+            if (!Objects.equals(path, DiffEntry.DEV_NULL)) {
+                stagedFileKeys.add(path);
+            }
+        }
+        return stagedFileKeys;
+    }
+
     @Override
     public List<UploadFile> doSync() {
         return doSyncByUploadFiles(syncFiles);
@@ -153,6 +170,7 @@ public class GitFileManageImpl implements FileManage {
             return new ArrayList<>();
         }
         List<UploadFile> uploadedFiles = new ArrayList<>();
+        List<UploadFile> stagedCandidateFiles = new ArrayList<>();
         try {
             try (FileChannel lockFileChannel = FileChannel.open(syncLockFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
                  FileLock syncLock = lockFileChannel.lock()) {
@@ -179,7 +197,20 @@ public class GitFileManageImpl implements FileManage {
                     } else {
                         git.add().addFilepattern(e.getFileKey()).call();
                     }
-                    uploadedFiles.add(e);
+                    stagedCandidateFiles.add(e);
+                }
+                Set<String> stagedFileKeys = collectStagedFileKeys();
+                for (UploadFile uploadFile : stagedCandidateFiles) {
+                    String fileKey = uploadFile.getFileKey();
+                    if (fileKey.startsWith("/")) {
+                        fileKey = fileKey.substring(1);
+                    }
+                    if (stagedFileKeys.contains(fileKey)) {
+                        uploadedFiles.add(uploadFile);
+                    }
+                }
+                if (uploadedFiles.isEmpty()) {
+                    return uploadedFiles;
                 }
                 LOGGER.info("Git add used time " + (System.currentTimeMillis() - start) + "ms");
 
