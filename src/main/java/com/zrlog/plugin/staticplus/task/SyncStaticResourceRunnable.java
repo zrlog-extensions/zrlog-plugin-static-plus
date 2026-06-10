@@ -25,7 +25,6 @@ public class SyncStaticResourceRunnable implements Runnable {
 
     private final IOSession session;
 
-    private final String cacheKeyMapKey = "cacheMap";
     private static final ReentrantLock REENTRANT_LOCK = new ReentrantLock();
     private static final AtomicLong VERSION = new AtomicLong();
     private boolean success = true;
@@ -34,20 +33,6 @@ public class SyncStaticResourceRunnable implements Runnable {
 
     public SyncStaticResourceRunnable(IOSession session) {
         this.session = session;
-    }
-
-    private Map<String, String> preloadCache(Map<String, String> responseMap) {
-        String cacheMapStr = responseMap.get(cacheKeyMapKey);
-        if (Objects.nonNull(cacheMapStr) && !cacheMapStr.isEmpty()) {
-            return new Gson().fromJson(cacheMapStr, Map.class);
-        }
-        return new HashMap<>();
-    }
-
-    private void saveCacheToDb(Map<String, String> fileInfoCacheMap) {
-        Map<String, String> newCacheMap = new TreeMap<>();
-        newCacheMap.put(cacheKeyMapKey, new Gson().toJson(fileInfoCacheMap));
-        session.sendJsonMsg(newCacheMap, ActionType.SET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST);
     }
 
     @Override
@@ -59,18 +44,16 @@ public class SyncStaticResourceRunnable implements Runnable {
                 return;
             }
             Map<String, Object> map = new HashMap<>();
-            map.put("key", "syncTemplate,syncHtml,syncRemoteType," + cacheKeyMapKey);
+            map.put("key", "syncTemplate,syncHtml,syncRemoteType");
             Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, map, ActionType.GET_WEBSITE, Map.class);
             if (responseMap == null) {
                 markResult(true, 0, "未读取到静态同步配置。");
                 return;
             }
-            //reload cache
-            Map<String, String> fileInfoCacheMap = preloadCache(responseMap);
             TemplatePath templatePath = session.getResponseSync(ContentType.JSON, new HashMap<>(), ActionType.CURRENT_TEMPLATE, TemplatePath.class);
             BlogRunTime blogRunTime = session.getResponseSync(ContentType.JSON, new HashMap<>(), ActionType.BLOG_RUN_TIME, BlogRunTime.class);
             List<UploadFile> uploadFiles = new ArrayList<>();
-            Map<String, String> copyFileInfoMap = new HashMap<>(fileInfoCacheMap);
+            Map<String, String> copyFileInfoMap = new HashMap<>();
             uploadFiles.addAll(SyncFileInfoCacheUtils.templateUploadFiles(blogRunTime, responseMap, templatePath, copyFileInfoMap));
             uploadFiles.addAll(SyncFileInfoCacheUtils.cacheFiles(blogRunTime, responseMap, copyFileInfoMap));
             if (uploadFiles.isEmpty()) {
@@ -102,11 +85,6 @@ public class SyncStaticResourceRunnable implements Runnable {
                         recordSyncHistory(success, filesCount, message);
                         return;
                     }
-                    for (UploadFile uploadFile : uploadedFiles) {
-                        String key = uploadFile.getFile().toString();
-                        fileInfoCacheMap.put(key, copyFileInfoMap.get(key));
-                    }
-                    saveCacheToDb(fileInfoCacheMap);
                     markResult(true, uploadedFiles.size(), "成功推送了 " + uploadedFiles.size() + " 个新增/变更资源。");
                     recordSyncHistory(success, filesCount, message);
                 }
@@ -134,26 +112,26 @@ public class SyncStaticResourceRunnable implements Runnable {
             historyRequest.put("key", "syncHistory");
             Map<String, String> historyResponse = (Map<String, String>) session.getResponseSync(ContentType.JSON, historyRequest, ActionType.GET_WEBSITE, Map.class);
             String syncHistoryJson = historyResponse != null ? historyResponse.get("syncHistory") : null;
-            
+
             List<Map<String, Object>> historyList;
             if (syncHistoryJson != null && !syncHistoryJson.trim().isEmpty()) {
                 historyList = new Gson().fromJson(syncHistoryJson, List.class);
             } else {
                 historyList = new ArrayList<>();
             }
-            
+
             Map<String, Object> record = new HashMap<>();
             record.put("id", UUID.randomUUID().toString());
             record.put("time", new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
             record.put("success", success);
             record.put("filesCount", filesCount);
             record.put("message", message);
-            
+
             historyList.add(0, record);
             if (historyList.size() > 15) {
                 historyList = historyList.subList(0, 15);
             }
-            
+
             Map<String, String> saveMap = new HashMap<>();
             saveMap.put("syncHistory", new Gson().toJson(historyList));
             session.sendJsonMsg(saveMap, ActionType.SET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST);
