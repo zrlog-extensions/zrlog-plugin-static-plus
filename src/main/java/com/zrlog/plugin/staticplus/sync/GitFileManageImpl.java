@@ -13,6 +13,7 @@ import com.zrlog.plugin.type.RunType;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.api.ResetCommand.ResetType;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RefSpec;
@@ -178,6 +179,8 @@ public class GitFileManageImpl implements FileManage {
                 initGit();
                 //检出分支
                 checkout(git, gitRemoteInfo.getBranch(), usernamePasswordCredentialsProvider);
+                //并发同步问题
+                git.reset().setMode(ResetType.MIXED).setRef("HEAD").call();
                 git.pull().setCredentialsProvider(usernamePasswordCredentialsProvider).setRemote("origin").setRemoteBranchName(gitRemoteInfo.getBranch()).call();
                 git.remoteAdd().setName("origin");
                 long start = System.currentTimeMillis();
