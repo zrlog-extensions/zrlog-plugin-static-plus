@@ -441,6 +441,19 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
         }
         return syncTypeValue;
     };
+    const trimValue = (value: unknown, fallback: unknown = "") => {
+        if (typeof value === "string") {
+            return value.trim();
+        }
+        if (typeof fallback === "string") {
+            return fallback.trim();
+        }
+        return "";
+    };
+    const normalizePort = (value: unknown, fallback: unknown = "") => {
+        const normalized = value !== undefined ? trimValue(value) : trimValue(fallback);
+        return normalized ? Number(normalized) : "";
+    };
 
     const initialValues: FormValues = {
         syncRemoteType: syncType,
@@ -470,29 +483,29 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
         setLoading(true);
         try {
             const gitConfig: GitConfig = {
-                url: values.gitUrl.trim(),
-                branch: values.gitBranch.trim(),
-                username: values.gitUsername.trim(),
-                password: values.gitPassword ? values.gitPassword.trim() : "",
-                accessBaseUrl: values.gitAccessBaseUrl.trim(),
-                gitCommitterUsername: values.gitCommitterUsername ? values.gitCommitterUsername.trim() : "",
-                gitCommitterEmail: values.gitCommitterEmail ? values.gitCommitterEmail.trim() : "",
-                proxyHttpHost: values.proxyHttpHost ? values.proxyHttpHost.trim() : "",
-                proxyHttpPort: values.proxyHttpPort ? Number(values.proxyHttpPort) : "",
+                url: trimValue(values.gitUrl, git.url),
+                branch: trimValue(values.gitBranch, git.branch || "main"),
+                username: trimValue(values.gitUsername, git.username),
+                password: trimValue(values.gitPassword, git.password),
+                accessBaseUrl: trimValue(values.gitAccessBaseUrl, git.accessBaseUrl),
+                gitCommitterUsername: trimValue(values.gitCommitterUsername, git.gitCommitterUsername),
+                gitCommitterEmail: trimValue(values.gitCommitterEmail, git.gitCommitterEmail),
+                proxyHttpHost: trimValue(values.proxyHttpHost, git.proxyHttpHost),
+                proxyHttpPort: normalizePort(values.proxyHttpPort, git.proxyHttpPort),
             };
             const s3Config: S3Config = {
-                accessKey: values.s3AccessKey ? values.s3AccessKey.trim() : "",
-                secretKey: values.s3SecretKey ? values.s3SecretKey.trim() : "",
-                sessionToken: values.s3SessionToken ? values.s3SessionToken.trim() : "",
-                endpoint: values.s3Endpoint ? values.s3Endpoint.trim() : "",
-                region: values.s3Region ? values.s3Region.trim() : "",
-                bucket: values.s3Bucket ? values.s3Bucket.trim() : "",
-                baseUrl: values.s3BaseUrl ? values.s3BaseUrl.trim() : "",
-                pathStyle: values.s3PathStyle || false,
+                accessKey: trimValue(values.s3AccessKey, s3.accessKey),
+                secretKey: trimValue(values.s3SecretKey, s3.secretKey),
+                sessionToken: trimValue(values.s3SessionToken, s3.sessionToken),
+                endpoint: trimValue(values.s3Endpoint, s3.endpoint),
+                region: trimValue(values.s3Region, s3.region),
+                bucket: trimValue(values.s3Bucket, s3.bucket),
+                baseUrl: trimValue(values.s3BaseUrl, s3.baseUrl),
+                pathStyle: typeof values.s3PathStyle === "boolean" ? values.s3PathStyle : parseBoolean(s3.pathStyle),
             };
 
             const params = new URLSearchParams();
-            params.append("syncRemoteType", values.syncRemoteType);
+            params.append("syncRemoteType", values.syncRemoteType || currentRemoteType);
             params.append("git", JSON.stringify(gitConfig));
             params.append("s3", JSON.stringify(s3Config));
             params.append("syncTemplate", values.syncTemplate ? "on" : "off");

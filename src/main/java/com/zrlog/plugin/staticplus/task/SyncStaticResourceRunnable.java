@@ -47,11 +47,12 @@ public class SyncStaticResourceRunnable implements Runnable {
             if (!Objects.equals(VERSION.get(), expectVersion)) {
                 return;
             }
+            startAt = System.currentTimeMillis();
             Map<String, Object> map = new HashMap<>();
             map.put("key", "syncTemplate,syncHtml,syncRemoteType");
             Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, map, ActionType.GET_WEBSITE, Map.class);
             if (responseMap == null) {
-                setResultAndRecord(true, 0, "未读取到静态同步配置。", null, elapsed(startAt), true);
+                setResultAndRecord(false, 0, "未读取到静态同步配置。", null, elapsed(startAt), true);
                 return;
             }
             TemplatePath templatePath = session.getResponseSync(ContentType.JSON, new HashMap<>(), ActionType.CURRENT_TEMPLATE, TemplatePath.class);
@@ -67,20 +68,20 @@ public class SyncStaticResourceRunnable implements Runnable {
             String syncRemoteType = responseMap.get("syncRemoteType");
             this.syncRemoteType = syncRemoteType;
             if (Objects.isNull(syncRemoteType)) {
-                setResultAndRecord(true, 0, "未配置静态资源远程同步类型。", null, elapsed(startAt), true);
+                setResultAndRecord(false, 0, "未配置静态资源远程同步类型。", null, elapsed(startAt), true);
                 return;
             }
             Map<String, Object> configMapRequest = new HashMap<>();
             configMapRequest.put("key", syncRemoteType);
             Map<String, String> configResponse = (Map<String, String>) session.getResponseSync(ContentType.JSON, configMapRequest, ActionType.GET_WEBSITE, Map.class);
             if (configResponse == null) {
-                setResultAndRecord(true, 0, "未读取到 " + syncRemoteType + " 同步配置。", syncRemoteType, elapsed(startAt), true);
+                setResultAndRecord(false, 0, "未读取到 " + syncRemoteType + " 同步配置。", syncRemoteType, elapsed(startAt), true);
                 return;
             }
             if (Objects.equals(syncRemoteType, "git")) {
                 String gitConfig = configResponse.get(syncRemoteType);
                 if (Objects.isNull(gitConfig) || gitConfig.trim().isEmpty()) {
-                    setResultAndRecord(true, 0, "未配置 git 同步信息。", syncRemoteType, elapsed(startAt), true);
+                    setResultAndRecord(false, 0, "未配置 git 同步信息。", syncRemoteType, elapsed(startAt), true);
                     return;
                 }
                 try (FileManage fileManage = new GitFileManageImpl(gitConfig, uploadFiles, session)) {
@@ -94,7 +95,7 @@ public class SyncStaticResourceRunnable implements Runnable {
             } else if (Objects.equals(syncRemoteType, "s3")) {
                 String s3Config = configResponse.get(syncRemoteType);
                 if (Objects.isNull(s3Config) || s3Config.trim().isEmpty()) {
-                    setResultAndRecord(true, 0, "未配置 s3 同步信息。", syncRemoteType, elapsed(startAt), true);
+                    setResultAndRecord(false, 0, "未配置 s3 同步信息。", syncRemoteType, elapsed(startAt), true);
                     return;
                 }
                 try (FileManage fileManage = new S3FileManageImpl(s3Config, uploadFiles, session)) {
