@@ -177,6 +177,7 @@
                                     -H:+BuildReport
                                     -H:+AddAllCharsets
                                     -H:+UnlockExperimentalVMOptions
+                                    -H:-ReduceImplicitExceptionStackTraceInformation
                                     -march=compatibility
                                     --enable-preview
                                     -H:DashboardDump=${imageName}
