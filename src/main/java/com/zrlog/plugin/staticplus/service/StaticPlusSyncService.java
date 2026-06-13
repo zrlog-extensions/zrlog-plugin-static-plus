@@ -19,7 +19,7 @@ import java.util.Map;
         key = "staticPlus.sync",
         label = "发布静态化资源",
         description = "发布模板静态资源和静态缓存文件到配置的远端静态资源仓库（支持 Git 与标准 S3 API，兼容 R2 等服务）。",
-        defaultCron = "*/1 * * * *",
+        defaultCron = "*/10 * * * *",
         timeoutSeconds = 300
 )
 public class StaticPlusSyncService implements IPluginService {
