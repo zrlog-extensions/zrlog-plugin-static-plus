@@ -20,6 +20,7 @@ import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class SyncStaticResourceRunnable implements Runnable {
@@ -112,7 +113,7 @@ public class SyncStaticResourceRunnable implements Runnable {
                 setResultAndRecord(false, 0, "暂不支持 " + syncRemoteType + " 发布目标。", syncRemoteType, elapsed(startAt), true);
             }
         } catch (Exception e) {
-            LOGGER.warning("Sync error " + e.getMessage());
+            LOGGER.log(Level.WARNING, "Publish error", e);
             setResultAndRecord(false, 0, "发布失败:\n" + fullErrorMessage(e), this.syncRemoteType, elapsed(startAt), true);
             return;
         } finally {
