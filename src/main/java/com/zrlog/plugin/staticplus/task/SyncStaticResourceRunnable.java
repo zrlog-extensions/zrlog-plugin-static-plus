@@ -15,6 +15,8 @@ import com.zrlog.plugin.staticplus.sync.S3FileManageImpl;
 import com.zrlog.plugin.staticplus.utils.SyncFileInfoCacheUtils;
 import com.zrlog.plugin.type.ActionType;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.util.*;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.locks.ReentrantLock;
@@ -52,7 +54,7 @@ public class SyncStaticResourceRunnable implements Runnable {
             map.put("key", "syncTemplate,syncHtml,syncRemoteType");
             Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, map, ActionType.GET_WEBSITE, Map.class);
             if (responseMap == null) {
-                setResultAndRecord(false, 0, "未读取到静态同步配置。", null, elapsed(startAt), true);
+                setResultAndRecord(false, 0, "未读取到静态资源发布配置。", null, elapsed(startAt), true);
                 return;
             }
             TemplatePath templatePath = session.getResponseSync(ContentType.JSON, new HashMap<>(), ActionType.CURRENT_TEMPLATE, TemplatePath.class);
@@ -62,56 +64,56 @@ public class SyncStaticResourceRunnable implements Runnable {
             uploadFiles.addAll(SyncFileInfoCacheUtils.templateUploadFiles(blogRunTime, responseMap, templatePath, copyFileInfoMap));
             uploadFiles.addAll(SyncFileInfoCacheUtils.cacheFiles(blogRunTime, responseMap, copyFileInfoMap));
             if (uploadFiles.isEmpty()) {
-                setResultAndRecord(true, 0, "同步已完成，无新变动资源需要推送。", responseMap.get("syncRemoteType"), elapsed(startAt), true);
+                setResultAndRecord(true, 0, "发布已完成，无新变动资源需要发布。", responseMap.get("syncRemoteType"), elapsed(startAt), true);
                 return;
             }
             String syncRemoteType = responseMap.get("syncRemoteType");
             this.syncRemoteType = syncRemoteType;
             if (Objects.isNull(syncRemoteType)) {
-                setResultAndRecord(false, 0, "未配置静态资源远程同步类型。", null, elapsed(startAt), true);
+                setResultAndRecord(false, 0, "未配置静态资源发布目标。", null, elapsed(startAt), true);
                 return;
             }
             Map<String, Object> configMapRequest = new HashMap<>();
             configMapRequest.put("key", syncRemoteType);
             Map<String, String> configResponse = (Map<String, String>) session.getResponseSync(ContentType.JSON, configMapRequest, ActionType.GET_WEBSITE, Map.class);
             if (configResponse == null) {
-                setResultAndRecord(false, 0, "未读取到 " + syncRemoteType + " 同步配置。", syncRemoteType, elapsed(startAt), true);
+                setResultAndRecord(false, 0, "未读取到 " + syncRemoteType + " 发布配置。", syncRemoteType, elapsed(startAt), true);
                 return;
             }
             if (Objects.equals(syncRemoteType, "git")) {
                 String gitConfig = configResponse.get(syncRemoteType);
                 if (Objects.isNull(gitConfig) || gitConfig.trim().isEmpty()) {
-                    setResultAndRecord(false, 0, "未配置 git 同步信息。", syncRemoteType, elapsed(startAt), true);
+                    setResultAndRecord(false, 0, "未配置 Git 发布信息。", syncRemoteType, elapsed(startAt), true);
                     return;
                 }
                 try (FileManage fileManage = new GitFileManageImpl(gitConfig, uploadFiles, session)) {
                     List<UploadFile> uploadedFiles = fileManage.doSync();
                     if (uploadedFiles.isEmpty()) {
-                        setResultAndRecord(true, 0, "同步已完成，无新变动资源需要推送。", syncRemoteType, elapsed(startAt), true);
+                        setResultAndRecord(true, 0, "发布已完成，无新变动资源需要发布。", syncRemoteType, elapsed(startAt), true);
                         return;
                     }
-                    setResultAndRecord(true, uploadedFiles.size(), "成功推送了 " + uploadedFiles.size() + " 个新增/变更资源。", syncRemoteType, elapsed(startAt), true);
+                    setResultAndRecord(true, uploadedFiles.size(), "成功发布了 " + uploadedFiles.size() + " 个新增/变更资源。", syncRemoteType, elapsed(startAt), true);
                 }
             } else if (Objects.equals(syncRemoteType, "s3")) {
                 String s3Config = configResponse.get(syncRemoteType);
                 if (Objects.isNull(s3Config) || s3Config.trim().isEmpty()) {
-                    setResultAndRecord(false, 0, "未配置 s3 同步信息。", syncRemoteType, elapsed(startAt), true);
+                    setResultAndRecord(false, 0, "未配置 S3 发布信息。", syncRemoteType, elapsed(startAt), true);
                     return;
                 }
                 try (FileManage fileManage = new S3FileManageImpl(s3Config, uploadFiles, session)) {
                     List<UploadFile> uploadedFiles = fileManage.doSync();
                     if (uploadedFiles.isEmpty()) {
-                        setResultAndRecord(true, 0, "同步已完成，无新变动资源需要推送。", syncRemoteType, elapsed(startAt), true);
+                        setResultAndRecord(true, 0, "发布已完成，无新变动资源需要发布。", syncRemoteType, elapsed(startAt), true);
                         return;
                     }
-                    setResultAndRecord(true, uploadedFiles.size(), "成功推送了 " + uploadedFiles.size() + " 个新增/变更资源。", syncRemoteType, elapsed(startAt), true);
+                    setResultAndRecord(true, uploadedFiles.size(), "成功发布了 " + uploadedFiles.size() + " 个新增/变更资源。", syncRemoteType, elapsed(startAt), true);
                 }
             } else {
-                setResultAndRecord(false, 0, "暂不支持 " + syncRemoteType + " 同步类型。", syncRemoteType, elapsed(startAt), true);
+                setResultAndRecord(false, 0, "暂不支持 " + syncRemoteType + " 发布目标。", syncRemoteType, elapsed(startAt), true);
             }
         } catch (Exception e) {
             LOGGER.warning("Sync error " + e.getMessage());
-            setResultAndRecord(false, 0, "同步失败: " + e.getMessage(), this.syncRemoteType, elapsed(startAt), true);
+            setResultAndRecord(false, 0, "发布失败:\n" + fullErrorMessage(e), this.syncRemoteType, elapsed(startAt), true);
             return;
         } finally {
             REENTRANT_LOCK.unlock();
@@ -135,6 +137,12 @@ public class SyncStaticResourceRunnable implements Runnable {
 
     private long elapsed(long startAt) {
         return System.currentTimeMillis() - startAt;
+    }
+
+    private String fullErrorMessage(Exception e) {
+        StringWriter stringWriter = new StringWriter();
+        e.printStackTrace(new PrintWriter(stringWriter));
+        return stringWriter.toString();
     }
 
     private void recordSyncHistory(boolean success, int filesCount, String message, long uploadTimeMs, String syncRemoteType) {

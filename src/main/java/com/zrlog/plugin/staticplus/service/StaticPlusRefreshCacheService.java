@@ -11,7 +11,7 @@ import com.zrlog.plugin.data.codec.MsgPacket;
         key = "staticPlus.refreshCache",
         type = "event_handler",
         label = "刷新静态资源缓存",
-        description = "响应系统缓存刷新事件，同步模板静态资源和静态缓存文件。",
+        description = "响应系统缓存刷新事件，发布模板静态资源和静态缓存文件。",
         exposure = {"runtime_event"},
         riskLevel = "medium",
         timeoutSeconds = 300,

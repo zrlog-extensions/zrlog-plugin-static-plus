@@ -334,6 +334,8 @@ const HistoryTableText = styled(Text)`
 
 const HistoryLogText = styled(Text)`
   font-size: 13px;
+  white-space: pre-wrap;
+  word-break: break-word;
 `;
 
 const syncRemoteTypeOptions = [
@@ -439,6 +441,12 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
         if (!syncTypeValue || typeof syncTypeValue !== "string") {
             return "未知";
         }
+        if (syncTypeValue === "git") {
+            return "Git 仓库";
+        }
+        if (syncTypeValue === "s3") {
+            return "S3 协议对象存储";
+        }
         return syncTypeValue;
     };
     const trimValue = (value: unknown, fallback: unknown = "") => {
@@ -520,7 +528,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
             if (data.success || data.status === 200) {
                 messageApi.success({
-                    content: "配置已保存，并已开始执行同步。",
+                    content: "配置已保存，并已开始执行发布。",
                     duration: 3,
                 });
                 setSettingsVisible(false);
@@ -546,9 +554,9 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
             <Header>
                 <HeaderContent>
                     <div>
-                        <Title level={3}>静态同步日志与状态</Title>
+                        <Title level={3}>静态资源发布记录</Title>
                         <Paragraph type="secondary">
-                            查看静态资源同步历史。可在“配置同步参数”中修改 Git 凭据和同步范围。
+                            查看静态资源发布历史。可在“配置发布目标”中修改远端目标和发布范围。
                         </Paragraph>
                     </div>
                     <Space wrap style={{width: isPhone ? "100%" : undefined}}>
@@ -566,18 +574,18 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                             onClick={() => setSettingsVisible(true)}
                             style={isPhone ? {flex: 1} : undefined}
                         >
-                            配置同步参数
+                            配置发布目标
                         </Button>
                     </Space>
                 </HeaderContent>
             </Header>
 
-            {/* Mobile Scroll-friendly Sync History Table Card as MAIN display */}
+            {/* Mobile Scroll-friendly Publish History Table Card as MAIN display */}
             <StyledCard
                 title={
                     <Space>
                         <HistoryOutlined />
-                        <span>同步日志记录</span>
+                        <span>发布记录</span>
                     </Space>
                 }
                 bordered={false}
@@ -588,20 +596,20 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                     pagination={{ pageSize: 10 }}
                     size="small"
                     scroll={{ x: 'max-content' }}
-                    locale={{ emptyText: "暂无同步记录" }}
+                    locale={{ emptyText: "暂无发布记录" }}
                     columns={[
                         {
-                            title: "同步时间",
+                            title: "执行时间",
                             dataIndex: "time",
                             key: "time",
                             width: 170,
                             render: (text: string) => <HistoryTableText strong>{text}</HistoryTableText>,
                         },
                         {
-                            title: "同步方式",
+                            title: "发布目标",
                             dataIndex: "syncRemoteType",
                             key: "syncRemoteType",
-                            width: 130,
+                            width: 150,
                             render: (syncType: any) => <Tag color="blue">{formatSyncType(syncType)}</Tag>,
                         },
                         {
@@ -616,21 +624,21 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                             ),
                         },
                         {
-                            title: "推送文件",
+                            title: "发布文件",
                             dataIndex: "filesCount",
                             key: "filesCount",
                             width: 100,
                             render: (count: number) => <Tag color="blue">{count} 个</Tag>,
                         },
                         {
-                            title: "上传耗时",
+                            title: "发布耗时",
                             dataIndex: "uploadTimeMs",
                             key: "uploadTimeMs",
                             width: 120,
                             render: (uploadTimeMs: any) => <HistoryTableText>{formatSyncDuration(uploadTimeMs)}</HistoryTableText>,
                         },
                         {
-                            title: "日志详情",
+                            title: "执行结果",
                             dataIndex: "message",
                             key: "message",
                             render: (text: string, record: any) => (
@@ -646,7 +654,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                 title={
                     <Space>
                         <SettingOutlined />
-                        <span>配置静态同步参数</span>
+                        <span>配置静态资源发布目标</span>
                     </Space>
                 }
                 open={settingsVisible}
@@ -654,7 +662,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                 onOk={() => form.submit()}
                 confirmLoading={loading}
                 width={isPhone ? "calc(100vw - 24px)" : isCompact ? "92vw" : 850}
-                okText="保存配置并运行同步"
+                okText="保存配置并运行发布"
                 cancelText="取消"
                 destroyOnClose
             >
@@ -670,7 +678,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                             {/* Left Column: Basic Settings */}
                             <div className="layout-col-left">
                                 <StyledCard
-                                    title={<span><SettingOutlined /> 基础同步设置</span>}
+                                    title={<span><SettingOutlined /> 基础发布设置</span>}
                                     bordered={false}
                                 >
                                     <Form.Item
@@ -685,9 +693,9 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                     <SwitchGroup>
                                         <SwitchItem>
                                             <SwitchInfo>
-                                                <SwitchLabel>主题静态文件同步</SwitchLabel>
+                                                <SwitchLabel>主题静态文件发布</SwitchLabel>
                                                 <SwitchDesc>
-                                                    同步活跃主题下的 CSS、JS 和图片静态资源。
+                                                    发布活跃主题下的 CSS、JS 和图片静态资源。
                                                 </SwitchDesc>
                                             </SwitchInfo>
                                             <Form.Item name="syncTemplate" valuePropName="checked" noStyle>
@@ -699,9 +707,9 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
                                         <SwitchItem>
                                             <SwitchInfo>
-                                                <SwitchLabel>静态缓存 HTML 同步</SwitchLabel>
+                                                <SwitchLabel>静态缓存 HTML 发布</SwitchLabel>
                                                 <SwitchDesc>
-                                                    静态化全站文章与页面 HTML 并同步。
+                                                    发布静态化后的全站文章与页面 HTML。
                                                 </SwitchDesc>
                                             </SwitchInfo>
                                             <Form.Item name="syncHtml" valuePropName="checked" noStyle>
@@ -713,9 +721,9 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
                                         <SwitchItem>
                                             <SwitchInfo>
-                                                <SwitchLabel>静态附件同步</SwitchLabel>
+                                                <SwitchLabel>静态附件发布</SwitchLabel>
                                                 <SwitchDesc>
-                                                    同步上传到附件库中的媒体资产。
+                                                    发布上传到附件库中的媒体资产。
                                                 </SwitchDesc>
                                             </SwitchInfo>
                                             <Form.Item name="syncAttached" valuePropName="checked" noStyle>

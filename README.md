@@ -1,14 +1,15 @@
 # zrlog-plugin-static-plus
 
-ZrLog 静态资源同步插件。将主题静态资源、静态缓存 HTML 文件和附件同步到配置的 Git 远端仓库。
+ZrLog 静态资源发布插件。将主题静态资源、静态缓存 HTML、文章附件、生成资源和私有备份资源发布到配置的远端静态资源仓库。
 
 ## 功能
 
-- 配置 Git 远端仓库、分支和访问凭据
-- 同步主题静态资源
-- 同步静态缓存 HTML 文件
-- 同步上传到附件库中的媒体资源
-- 记录每次同步的文件数量和执行结果
+- 配置 Git 仓库或标准 S3 API 对象存储作为发布目标
+- 发布主题静态资源
+- 发布静态缓存 HTML 文件
+- 上传文章附件和生成资源到远端静态资源仓库
+- 上传备份文件等私有资源到远端静态资源仓库
+- 记录每次发布的目标、文件数量、耗时和完整失败信息
 
 ## 构建
 
@@ -19,8 +20,9 @@ export PATH=${JAVA_HOME}/bin:$PATH
 
 ## 支持列表
 
-- [x] github + cloudflare
-- [ ] git pages（仓库）
+- [x] Git 仓库
+- [x] 标准 S3 API 对象存储（兼容 AWS S3、Cloudflare R2 等服务）
+- [ ] Git Pages（仓库）
 - [ ] Nginx + SFTP
 - [ ] Nginx + FTP
 - [ ] 其他文件传输协议（webdav, nas, smb）

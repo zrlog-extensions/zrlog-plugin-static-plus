@@ -14,20 +14,20 @@ import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.api.ResetCommand.ResetType;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.PersonIdent;
 import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.transport.RefSpec;
 import org.eclipse.jgit.transport.UsernamePasswordCredentialsProvider;
+import org.eclipse.jgit.util.FS;
+import org.eclipse.jgit.util.SystemReader;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.*;
-import java.nio.channels.FileChannel;
-import java.nio.channels.FileLock;
 import java.nio.file.Files;
 import java.util.HashSet;
 import java.nio.file.StandardCopyOption;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -39,6 +39,10 @@ public class GitFileManageImpl implements FileManage {
 
     private static final Logger LOGGER = LoggerUtil.getLogger(GitFileManageImpl.class);
 
+    static {
+        configureJGitHome();
+    }
+
 
     private final GitRemoteInfo gitRemoteInfo;
     private final List<UploadFile> syncFiles;
@@ -49,6 +53,51 @@ public class GitFileManageImpl implements FileManage {
     private final PersonIdent committerAuthor;
     private final IOSession session;
     private final File syncLockFile;
+
+    private static void configureJGitHome() {
+        File jgitHome = new File(System.getProperty("user.dir"), ".jgit-home");
+        if (configureJGitHome(jgitHome)) {
+            return;
+        }
+        configureJGitHome(new File(System.getProperty("java.io.tmpdir"), "zrlog-staticplus-jgit-home"));
+    }
+
+    private static boolean configureJGitHome(File jgitHome) {
+        try {
+            File configHome = new File(jgitHome, ".config");
+            Files.createDirectories(new File(configHome, "jgit").toPath());
+            FS.DETECTED.setUserHome(jgitHome);
+            SystemReader currentReader = SystemReader.getInstance();
+            if (!(currentReader instanceof StaticPlusSystemReader)) {
+                SystemReader.setInstance(new StaticPlusSystemReader(currentReader, configHome.getAbsolutePath()));
+            }
+            if (RunConstants.runType == RunType.DEV) {
+                LOGGER.info("JGit home path: " + jgitHome.getAbsolutePath());
+            }
+            return true;
+        } catch (IOException e) {
+            LOGGER.log(Level.WARNING, "Prepare JGit home failed: " + jgitHome.getAbsolutePath(), e);
+            return false;
+        }
+    }
+
+    private static class StaticPlusSystemReader extends SystemReader.Delegate {
+
+        private final String xdgConfigHome;
+
+        StaticPlusSystemReader(SystemReader delegate, String xdgConfigHome) {
+            super(delegate);
+            this.xdgConfigHome = xdgConfigHome;
+        }
+
+        @Override
+        public String getenv(String variable) {
+            if (Constants.XDG_CONFIG_HOME.equals(variable)) {
+                return xdgConfigHome;
+            }
+            return super.getenv(variable);
+        }
+    }
 
 
     public GitFileManageImpl(String configJsonStr, List<UploadFile> syncFiles, IOSession session) {
@@ -159,11 +208,11 @@ public class GitFileManageImpl implements FileManage {
     }
 
     @Override
-    public List<UploadFile> doSync() {
+    public List<UploadFile> doSync() throws Exception {
         return doSyncByUploadFiles(syncFiles);
     }
 
-    private List<UploadFile> doSyncByUploadFiles(List<UploadFile> files) {
+    private List<UploadFile> doSyncByUploadFiles(List<UploadFile> files) throws Exception {
         if (Objects.isNull(gitRemoteInfo.getUrl())) {
             return new ArrayList<>();
         }
@@ -173,8 +222,7 @@ public class GitFileManageImpl implements FileManage {
         List<UploadFile> uploadedFiles = new ArrayList<>();
         List<UploadFile> stagedCandidateFiles = new ArrayList<>();
         try {
-            try (FileChannel lockFileChannel = FileChannel.open(syncLockFile.toPath(), StandardOpenOption.CREATE, StandardOpenOption.WRITE);
-                 FileLock syncLock = lockFileChannel.lock()) {
+            SyncLocks.withProcessAndFileLock(syncLockFile, () -> {
                 setupProxy();
                 initGit();
                 //检出分支
@@ -220,11 +268,12 @@ public class GitFileManageImpl implements FileManage {
                 git.commit().setCommitter(committerAuthor).setMessage("static-plus plugin auto commit").call();
                 git.push().setCredentialsProvider(usernamePasswordCredentialsProvider).setRemote("origin").setRefSpecs(new RefSpec(gitRemoteInfo.getBranch() + ":" + gitRemoteInfo.getBranch())).call();
                 LOGGER.info("Git push success");
-            }
+                return uploadedFiles;
+            });
             return uploadedFiles;
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Git [sync] push error", e);
-            return new ArrayList<>();
+            throw new IllegalStateException("Git 发布失败", e);
         }
     }
 

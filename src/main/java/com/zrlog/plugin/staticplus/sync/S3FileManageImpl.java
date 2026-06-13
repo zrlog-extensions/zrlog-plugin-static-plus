@@ -47,15 +47,17 @@ public class S3FileManageImpl implements FileManage {
     }
 
     @Override
-    public List<UploadFile> doSync() {
+    public List<UploadFile> doSync() throws Exception {
         return doSyncByUploadFiles(syncFiles);
     }
 
-    private List<UploadFile> doSyncByUploadFiles(List<UploadFile> files) {
+    private List<UploadFile> doSyncByUploadFiles(List<UploadFile> files) throws Exception {
         if (Objects.isNull(files) || files.isEmpty() || !isConfigReady()) {
             return new ArrayList<>();
         }
         List<UploadFile> uploadedFiles = new ArrayList<>();
+        List<String> failedFileKeys = new ArrayList<>();
+        Exception firstFailure = null;
         for (UploadFile uploadFile : files) {
             if (Objects.isNull(uploadFile) || Objects.isNull(uploadFile.getFile()) || !uploadFile.getFile().exists()) {
                 continue;
@@ -64,8 +66,16 @@ public class S3FileManageImpl implements FileManage {
                 create(uploadFile.getFile(), uploadFile.getFileKey(), true, true);
                 uploadedFiles.add(uploadFile);
             } catch (Exception e) {
+                if (firstFailure == null) {
+                    firstFailure = e;
+                }
+                failedFileKeys.add(uploadFile.getFileKey());
                 LOGGER.log(Level.WARNING, "upload file failed, key=" + uploadFile.getFileKey(), e);
             }
+        }
+        if (!failedFileKeys.isEmpty()) {
+            throw new IllegalStateException("S3 发布失败，成功 " + uploadedFiles.size() + " 个，失败 "
+                    + failedFileKeys.size() + " 个，失败文件: " + String.join(", ", failedFileKeys), firstFailure);
         }
         return uploadedFiles;
     }
@@ -81,42 +91,44 @@ public class S3FileManageImpl implements FileManage {
 
         String objectKey = normalizeKey(key);
         URI endpointUri = getEndpointUri();
-        URI objectUri = buildObjectUri(endpointUri, objectKey);
-        String objectKeyEncoded = AwsSigV4Signer.uriEncode(objectKey, false);
-        String payloadSha256 = sha256Hex(file);
-        Map<String, String> headers = new LinkedHashMap<>();
-        headers.put(X_AMZ_CONTENT_SHA256, payloadSha256);
-        if (!isBlank(s3RemoteInfo.getSessionToken())) {
-            headers.put(X_AMZ_SECURITY_TOKEN, s3RemoteInfo.getSessionToken());
-        }
-        String contentType = detectContentType(file.getName());
-        if (!isBlank(contentType)) {
-            headers.put("Content-Type", contentType);
-        }
+        return SyncLocks.withProcessLock(buildSyncLockKey(endpointUri), () -> {
+            URI objectUri = buildObjectUri(endpointUri, objectKey);
+            String objectKeyEncoded = AwsSigV4Signer.uriEncode(objectKey, false);
+            String payloadSha256 = sha256Hex(file);
+            Map<String, String> headers = new LinkedHashMap<>();
+            headers.put(X_AMZ_CONTENT_SHA256, payloadSha256);
+            if (!isBlank(s3RemoteInfo.getSessionToken())) {
+                headers.put(X_AMZ_SECURITY_TOKEN, s3RemoteInfo.getSessionToken());
+            }
+            String contentType = detectContentType(file.getName());
+            if (!isBlank(contentType)) {
+                headers.put("Content-Type", contentType);
+            }
 
-        Map<String, String> signedHeaders = signer.sign(
-                "PUT",
-                objectUri,
-                headers,
-                payloadSha256,
-                "s3",
-                getRegion(),
-                s3RemoteInfo.getAccessKey(),
-                s3RemoteInfo.getSecretKey(),
-                s3RemoteInfo.getSessionToken()
-        );
+            Map<String, String> signedHeaders = signer.sign(
+                    "PUT",
+                    objectUri,
+                    headers,
+                    payloadSha256,
+                    "s3",
+                    getRegion(),
+                    s3RemoteInfo.getAccessKey(),
+                    s3RemoteInfo.getSecretKey(),
+                    s3RemoteInfo.getSessionToken()
+            );
 
-        HttpRequest.Builder builder = HttpRequest.newBuilder(objectUri)
-                .timeout(Duration.ofMinutes(10))
-                .PUT(HttpRequest.BodyPublishers.ofFile(file.toPath()));
-        applySignedHeaders(builder, signedHeaders);
-        HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
-        if (!isSuccess(response.statusCode())) {
-            throw new IllegalStateException("S3 put failed, status=" + response.statusCode() + ", body="
-                    + trimBody(response.body()));
-        }
+            HttpRequest.Builder builder = HttpRequest.newBuilder(objectUri)
+                    .timeout(Duration.ofMinutes(10))
+                    .PUT(HttpRequest.BodyPublishers.ofFile(file.toPath()));
+            applySignedHeaders(builder, signedHeaders);
+            HttpResponse<String> response = httpClient.send(builder.build(), HttpResponse.BodyHandlers.ofString());
+            if (!isSuccess(response.statusCode())) {
+                throw new IllegalStateException("S3 put failed, status=" + response.statusCode() + ", body="
+                        + trimBody(response.body()));
+            }
 
-        return buildPublicUrl(endpointUri, objectKeyEncoded, supportHttps);
+            return buildPublicUrl(endpointUri, objectKeyEncoded, supportHttps);
+        });
     }
 
     @Override
@@ -152,6 +164,17 @@ public class S3FileManageImpl implements FileManage {
         }
         sb.append(objectPath);
         return URI.create(sb.toString());
+    }
+
+    private String buildSyncLockKey(URI endpointUri) {
+        StringBuilder sb = new StringBuilder("s3:");
+        sb.append(endpointUri.getScheme()).append("://").append(endpointUri.getHost());
+        if (endpointUri.getPort() > 0) {
+            sb.append(":").append(endpointUri.getPort());
+        }
+        sb.append("/").append(trimSlash(endpointUri.getPath()));
+        sb.append("/").append(s3RemoteInfo.getBucket());
+        return sb.toString();
     }
 
     private String buildObjectPath(URI endpointUri, String encodedObjectKey) {

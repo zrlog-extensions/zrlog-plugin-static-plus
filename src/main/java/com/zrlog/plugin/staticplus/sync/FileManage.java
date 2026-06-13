@@ -12,5 +12,5 @@ public interface FileManage extends BucketManageAPI {
      *
      * @return
      */
-    List<UploadFile> doSync();
+    List<UploadFile> doSync() throws Exception;
 }

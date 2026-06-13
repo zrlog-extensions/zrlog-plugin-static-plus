@@ -17,8 +17,8 @@ import java.util.Map;
 @Capability(key = "staticPlus.sync", riskLevel = "medium")
 @ScheduledCapability(
         key = "staticPlus.sync",
-        label = "同步静态化资源",
-        description = "同步模板静态资源和静态缓存文件到配置的远端存储（支持 Git 与标准 S3 API，兼容 R2 等服务）。",
+        label = "发布静态化资源",
+        description = "发布模板静态资源和静态缓存文件到配置的远端静态资源仓库（支持 Git 与标准 S3 API，兼容 R2 等服务）。",
         defaultCron = "*/1 * * * *",
         timeoutSeconds = 300
 )
