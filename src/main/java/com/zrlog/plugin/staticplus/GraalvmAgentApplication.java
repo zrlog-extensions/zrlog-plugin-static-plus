@@ -9,6 +9,7 @@ import com.zrlog.plugin.staticplus.controller.StaticPlusController;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
 import com.zrlog.plugin.staticplus.sync.vo.CreateFileInfoVO;
 import com.zrlog.plugin.staticplus.sync.vo.GitRemoteInfo;
+import com.zrlog.plugin.staticplus.sync.vo.S3RemoteInfo;
 import com.zrlog.plugin.type.RunType;
 
 import java.io.File;
@@ -44,7 +45,7 @@ public class GraalvmAgentApplication {
         }
         try {
             PluginNativeImageUtils.usedGsonObject();
-            PluginNativeImageUtils.gsonNativeAgentByClazz(Arrays.asList(CreateFileInfoVO.class, GitRemoteInfo.class));
+            PluginNativeImageUtils.gsonNativeAgentByClazz(Arrays.asList(CreateFileInfoVO.class, GitRemoteInfo.class, S3RemoteInfo.class));
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Warm up static plus native image metadata failed", e);
         }

@@ -30,6 +30,7 @@ export interface StaticPlusConfig {
     syncAttached?: string;
     syncRemoteType?: string;
     git?: string;
+    s3?: string;
     syncHistory?: string;
     adminColorPrimary?: string;
 }

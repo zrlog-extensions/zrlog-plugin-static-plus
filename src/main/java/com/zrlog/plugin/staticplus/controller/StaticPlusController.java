@@ -58,7 +58,7 @@ public class StaticPlusController {
 
     public void index() {
         Map<String, Object> keyMap = new HashMap<>();
-        keyMap.put("key", "syncTemplate,syncHtml,syncAttached,syncRemoteType,git,syncHistory");
+        keyMap.put("key", "syncTemplate,syncHtml,syncAttached,syncRemoteType,git,s3,syncHistory");
         session.sendJsonMsg(keyMap, ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
             Map map = new Gson().fromJson(msgPacket.getDataStr(), Map.class);
             Map<String, Object> data = new HashMap<>();

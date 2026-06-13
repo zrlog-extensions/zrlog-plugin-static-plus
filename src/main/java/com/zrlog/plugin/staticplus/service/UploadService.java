@@ -15,6 +15,7 @@ import com.zrlog.plugin.data.codec.MsgPacketStatus;
 import com.zrlog.plugin.message.CapabilityInvokeResult;
 import com.zrlog.plugin.staticplus.sync.FileManage;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
+import com.zrlog.plugin.staticplus.sync.S3FileManageImpl;
 import com.zrlog.plugin.type.ActionType;
 
 import java.io.File;
@@ -138,6 +139,8 @@ public class UploadService implements IPluginService {
         FileManage bucketManageAPI = null;
         if (Objects.equals("git", responseMap.get("syncRemoteType"))) {
             bucketManageAPI = new GitFileManageImpl(configMap.get(syncType), new ArrayList<>(), session);
+        } else if (Objects.equals("s3", responseMap.get("syncRemoteType"))) {
+            bucketManageAPI = new S3FileManageImpl(configMap.get(syncType), new ArrayList<>(), session);
         }
         if (Objects.isNull(bucketManageAPI)) {
             return convertByUploadFileList(uploadFileList);

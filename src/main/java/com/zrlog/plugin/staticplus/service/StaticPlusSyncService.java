@@ -18,7 +18,7 @@ import java.util.Map;
 @ScheduledCapability(
         key = "staticPlus.sync",
         label = "同步静态化资源",
-        description = "同步模板静态资源和静态缓存文件到配置的 Git 远端仓库。",
+        description = "同步模板静态资源和静态缓存文件到配置的远端存储（支持 Git 与标准 S3 API，兼容 R2 等服务）。",
         defaultCron = "*/1 * * * *",
         timeoutSeconds = 300
 )
@@ -35,6 +35,8 @@ public class StaticPlusSyncService implements IPluginService {
         Map<String, Object> data = new HashMap<>();
         data.put("filesCount", runnable.getFilesCount());
         data.put("message", runnable.getMessage());
+        data.put("uploadTimeMs", runnable.getUploadTimeMs());
+        data.put("syncRemoteType", runnable.getSyncRemoteType());
         result.setData(data);
         session.sendJsonMsg(result, msgPacket.getMethodStr(), msgPacket.getMsgId(),
                 result.isSuccess() ? MsgPacketStatus.RESPONSE_SUCCESS : MsgPacketStatus.RESPONSE_ERROR);
