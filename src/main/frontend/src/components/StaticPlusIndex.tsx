@@ -528,7 +528,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
 
             if (data.success || data.status === 200) {
                 messageApi.success({
-                    content: "配置已保存，并已开始执行发布。",
+                    content: "配置已保存，并已开始执行发布",
                     duration: 3,
                 });
                 setSettingsVisible(false);
@@ -556,7 +556,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                     <div>
                         <Title level={3}>静态资源发布记录</Title>
                         <Paragraph type="secondary">
-                            查看静态资源发布历史。可在“配置发布目标”中修改远端目标和发布范围。
+                            查看静态资源发布历史，可在“配置发布目标”中修改远端目标和发布范围
                         </Paragraph>
                     </div>
                     <Space wrap style={{width: isPhone ? "100%" : undefined}}>
@@ -695,7 +695,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             <SwitchInfo>
                                                 <SwitchLabel>主题静态文件发布</SwitchLabel>
                                                 <SwitchDesc>
-                                                    发布活跃主题下的 CSS、JS 和图片静态资源。
+                                                    发布活跃主题下的 CSS、JS 和图片静态资源
                                                 </SwitchDesc>
                                             </SwitchInfo>
                                             <Form.Item name="syncTemplate" valuePropName="checked" noStyle>
@@ -709,7 +709,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             <SwitchInfo>
                                                 <SwitchLabel>静态缓存 HTML 发布</SwitchLabel>
                                                 <SwitchDesc>
-                                                    发布静态化后的全站文章与页面 HTML。
+                                                    发布静态化后的全站文章与页面 HTML
                                                 </SwitchDesc>
                                             </SwitchInfo>
                                             <Form.Item name="syncHtml" valuePropName="checked" noStyle>
@@ -723,7 +723,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             <SwitchInfo>
                                                 <SwitchLabel>静态附件发布</SwitchLabel>
                                                 <SwitchDesc>
-                                                    发布上传到附件库中的媒体资产。
+                                                    发布上传到附件库中的媒体资产
                                                 </SwitchDesc>
                                             </SwitchInfo>
                                             <Form.Item name="syncAttached" valuePropName="checked" noStyle>
@@ -747,7 +747,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                         bordered={false}
                                     >
                                         <Paragraph type="secondary" style={{marginBottom: 16}}>
-                                            兼容标准 S3 API，可直接对接 AWS S3、Cloudflare R2 等对象存储服务。
+                                            兼容标准 S3 API，可直接对接 AWS S3、Cloudflare R2 等对象存储服务
                                         </Paragraph>
 
                                         <Form.Item
@@ -860,7 +860,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             label={
                                                 <Space>
                                                     <span>Git 仓库 URL</span>
-                                                    <Tooltip title="Git 服务的 SSH 或 HTTPS 链接。HTTPS 方式通常需要配合 Access Token。">
+                                                    <Tooltip title="Git 服务的 SSH 或 HTTPS 链接，HTTPS 方式通常需要配合 Access Token">
                                                         <TooltipIcon />
                                                     </Tooltip>
                                                 </Space>
@@ -906,7 +906,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             label={
                                                 <Space>
                                                     <span>密码 / 个人访问令牌 (Token)</span>
-                                                    <Tooltip title="对于 GitHub，建议使用生成的个人访问令牌 (PAT) 代替明文登录密码以保障安全。">
+                                                    <Tooltip title="GitHub 建议使用个人访问令牌 (PAT)，避免使用明文登录密码">
                                                         <TooltipIcon />
                                                     </Tooltip>
                                                 </Space>
