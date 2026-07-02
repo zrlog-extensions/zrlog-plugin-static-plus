@@ -9,6 +9,10 @@ import com.zrlog.plugin.common.model.TemplatePath;
 import com.zrlog.plugin.common.vo.UploadFile;
 import com.zrlog.plugin.data.codec.ContentType;
 import com.zrlog.plugin.data.codec.MsgPacketStatus;
+import com.zrlog.plugin.staticplus.config.StaticPlusHistoryConfig;
+import com.zrlog.plugin.staticplus.config.StaticPlusRemoteConfig;
+import com.zrlog.plugin.staticplus.config.StaticPlusSyncConfig;
+import com.zrlog.plugin.staticplus.config.WebsiteKeyRequest;
 import com.zrlog.plugin.staticplus.sync.FileManage;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
 import com.zrlog.plugin.staticplus.sync.S3FileManageImpl;
@@ -51,10 +55,9 @@ public class SyncStaticResourceRunnable implements Runnable {
                 return;
             }
             startAt = System.currentTimeMillis();
-            Map<String, Object> map = new HashMap<>();
-            map.put("key", "syncTemplate,syncHtml,syncRemoteType");
-            Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, map, ActionType.GET_WEBSITE, Map.class);
-            if (responseMap == null) {
+            StaticPlusSyncConfig syncConfig = session.getResponseSync(ContentType.JSON,
+                    WebsiteKeyRequest.of("syncTemplate,syncHtml,syncRemoteType"), ActionType.GET_WEBSITE, StaticPlusSyncConfig.class);
+            if (syncConfig == null) {
                 setResultAndRecord(false, 0, "未读取到静态资源发布配置。", null, elapsed(startAt), true);
                 return;
             }
@@ -62,27 +65,26 @@ public class SyncStaticResourceRunnable implements Runnable {
             BlogRunTime blogRunTime = session.getResponseSync(ContentType.JSON, new HashMap<>(), ActionType.BLOG_RUN_TIME, BlogRunTime.class);
             List<UploadFile> uploadFiles = new ArrayList<>();
             Map<String, String> copyFileInfoMap = new HashMap<>();
-            uploadFiles.addAll(SyncFileInfoCacheUtils.templateUploadFiles(blogRunTime, responseMap, templatePath, copyFileInfoMap));
-            uploadFiles.addAll(SyncFileInfoCacheUtils.cacheFiles(blogRunTime, responseMap, copyFileInfoMap));
+            uploadFiles.addAll(SyncFileInfoCacheUtils.templateUploadFiles(blogRunTime, syncConfig, templatePath, copyFileInfoMap));
+            uploadFiles.addAll(SyncFileInfoCacheUtils.cacheFiles(blogRunTime, syncConfig, copyFileInfoMap));
             if (uploadFiles.isEmpty()) {
-                setResultAndRecord(true, 0, "发布已完成，无新变动资源需要发布。", responseMap.get("syncRemoteType"), elapsed(startAt), true);
+                setResultAndRecord(true, 0, "发布已完成，无新变动资源需要发布。", syncConfig.getSyncRemoteType(), elapsed(startAt), true);
                 return;
             }
-            String syncRemoteType = responseMap.get("syncRemoteType");
+            String syncRemoteType = syncConfig.getSyncRemoteType();
             this.syncRemoteType = syncRemoteType;
             if (Objects.isNull(syncRemoteType)) {
                 setResultAndRecord(false, 0, "未配置静态资源发布目标。", null, elapsed(startAt), true);
                 return;
             }
-            Map<String, Object> configMapRequest = new HashMap<>();
-            configMapRequest.put("key", syncRemoteType);
-            Map<String, String> configResponse = (Map<String, String>) session.getResponseSync(ContentType.JSON, configMapRequest, ActionType.GET_WEBSITE, Map.class);
+            StaticPlusRemoteConfig configResponse = session.getResponseSync(ContentType.JSON, WebsiteKeyRequest.of(syncRemoteType),
+                    ActionType.GET_WEBSITE, StaticPlusRemoteConfig.class);
             if (configResponse == null) {
                 setResultAndRecord(false, 0, "未读取到 " + syncRemoteType + " 发布配置。", syncRemoteType, elapsed(startAt), true);
                 return;
             }
             if (Objects.equals(syncRemoteType, "git")) {
-                String gitConfig = configResponse.get(syncRemoteType);
+                String gitConfig = configResponse.config(syncRemoteType);
                 if (Objects.isNull(gitConfig) || gitConfig.trim().isEmpty()) {
                     setResultAndRecord(false, 0, "未配置 Git 发布信息。", syncRemoteType, elapsed(startAt), true);
                     return;
@@ -96,7 +98,7 @@ public class SyncStaticResourceRunnable implements Runnable {
                     setResultAndRecord(true, uploadedFiles.size(), "成功发布了 " + uploadedFiles.size() + " 个新增/变更资源。", syncRemoteType, elapsed(startAt), true);
                 }
             } else if (Objects.equals(syncRemoteType, "s3")) {
-                String s3Config = configResponse.get(syncRemoteType);
+                String s3Config = configResponse.config(syncRemoteType);
                 if (Objects.isNull(s3Config) || s3Config.trim().isEmpty()) {
                     setResultAndRecord(false, 0, "未配置 S3 发布信息。", syncRemoteType, elapsed(startAt), true);
                     return;
@@ -148,38 +150,37 @@ public class SyncStaticResourceRunnable implements Runnable {
 
     private void recordSyncHistory(boolean success, int filesCount, String message, long uploadTimeMs, String syncRemoteType) {
         try {
-            Map<String, Object> historyRequest = new HashMap<>();
-            historyRequest.put("key", "syncHistory");
-            Map<String, String> historyResponse = (Map<String, String>) session.getResponseSync(ContentType.JSON, historyRequest, ActionType.GET_WEBSITE, Map.class);
-            String syncHistoryJson = historyResponse != null ? historyResponse.get("syncHistory") : null;
+            Gson gson = new Gson();
+            StaticPlusHistoryConfig historyResponse = session.getResponseSync(ContentType.JSON, WebsiteKeyRequest.of("syncHistory"), ActionType.GET_WEBSITE,
+                    StaticPlusHistoryConfig.class);
+            String syncHistoryJson = historyResponse != null ? historyResponse.getSyncHistory() : null;
 
-            List<Map<String, Object>> historyList;
-            if (syncHistoryJson != null && !syncHistoryJson.trim().isEmpty()) {
-                historyList = new Gson().fromJson(syncHistoryJson, List.class);
-            } else {
-                historyList = new ArrayList<>();
-            }
-
-            Map<String, Object> record = new HashMap<>();
-            record.put("id", UUID.randomUUID().toString());
-            record.put("time", new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()));
-            record.put("success", success);
-            record.put("filesCount", filesCount);
-            record.put("message", message);
-            record.put("uploadTimeMs", uploadTimeMs);
-            record.put("syncRemoteType", syncRemoteType);
+            List<SyncHistoryRecord> historyList = syncHistoryList(gson, syncHistoryJson);
+            SyncHistoryRecord record = SyncHistoryRecord.create(UUID.randomUUID().toString(),
+                    new java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(new Date()), success, filesCount,
+                    message, uploadTimeMs, syncRemoteType);
 
             historyList.add(0, record);
             if (historyList.size() > 15) {
-                historyList = historyList.subList(0, 15);
+                historyList = new ArrayList<>(historyList.subList(0, 15));
             }
 
-            Map<String, String> saveMap = new HashMap<>();
-            saveMap.put("syncHistory", new Gson().toJson(historyList));
-            session.sendJsonMsg(saveMap, ActionType.SET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST);
+            StaticPlusHistoryConfig saveConfig = new StaticPlusHistoryConfig();
+            saveConfig.setSyncHistory(gson.toJson(historyList));
+            session.sendJsonMsg(saveConfig, ActionType.SET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST);
         } catch (Exception e) {
             LOGGER.warning("Failed to record sync history: " + e.getMessage());
         }
+    }
+
+    private List<SyncHistoryRecord> syncHistoryList(Gson gson, String syncHistoryJson) {
+        if (syncHistoryJson != null && !syncHistoryJson.trim().isEmpty()) {
+            SyncHistoryRecord[] historyRecords = gson.fromJson(syncHistoryJson, SyncHistoryRecord[].class);
+            if (historyRecords != null) {
+                return new ArrayList<>(Arrays.asList(historyRecords));
+            }
+        }
+        return new ArrayList<>();
     }
 
     public boolean isSuccess() {

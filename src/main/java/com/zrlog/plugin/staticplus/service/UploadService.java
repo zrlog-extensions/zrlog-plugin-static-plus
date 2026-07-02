@@ -13,6 +13,9 @@ import com.zrlog.plugin.data.codec.ContentType;
 import com.zrlog.plugin.data.codec.MsgPacket;
 import com.zrlog.plugin.data.codec.MsgPacketStatus;
 import com.zrlog.plugin.message.CapabilityInvokeResult;
+import com.zrlog.plugin.staticplus.config.StaticPlusRemoteConfig;
+import com.zrlog.plugin.staticplus.config.StaticPlusSyncConfig;
+import com.zrlog.plugin.staticplus.config.WebsiteKeyRequest;
 import com.zrlog.plugin.staticplus.sync.FileManage;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
 import com.zrlog.plugin.staticplus.sync.S3FileManageImpl;
@@ -39,52 +42,32 @@ public class UploadService implements IPluginService {
 
     @Override
     public void handle(final IOSession ioSession, final MsgPacket requestPacket) {
-        Map<String, Object> rawRequest = new Gson().fromJson(requestPacket.getDataStr(), Map.class);
-        Map<String, Object> request = requestPayload(requestPacket, rawRequest);
-        List<String> fileInfoList = fileInfoList(request.get("fileInfo"));
+        UploadServiceRequest rawRequest = new Gson().fromJson(requestPacket.getDataStr(), UploadServiceRequest.class);
+        UploadServiceRequest request = requestPayload(requestPacket, rawRequest);
+        List<String> fileInfoList = request.fileInfoList();
         List<UploadFile> uploadFileList = getUploadFiles(fileInfoList);
         UploadFileResponse uploadFileResponse = upload(ioSession, uploadFileList);
-        List<Map<String, Object>> responseList = new ArrayList<>();
-        for (UploadFileResponseEntry entry : uploadFileResponse) {
-            Map<String, Object> map = new HashMap<>();
-            map.put("url", entry.getUrl());
-            responseList.add(map);
-        }
         if (Objects.equals(ActionType.CAPABILITY_INVOKE.name(), requestPacket.getMethodStr())) {
             CapabilityInvokeResult result = new CapabilityInvokeResult();
             result.setSuccess(true);
             Map<String, Object> data = new HashMap<>();
-            data.put("items", responseList);
+            data.put("items", uploadFileResponse);
             result.setData(data);
             ioSession.sendJsonMsg(result, requestPacket.getMethodStr(), requestPacket.getMsgId(), MsgPacketStatus.RESPONSE_SUCCESS);
         } else {
-            ioSession.sendMsg(ContentType.JSON, responseList, requestPacket.getMethodStr(), requestPacket.getMsgId(), MsgPacketStatus.RESPONSE_SUCCESS);
+            ioSession.sendMsg(ContentType.JSON, uploadFileResponse, requestPacket.getMethodStr(), requestPacket.getMsgId(), MsgPacketStatus.RESPONSE_SUCCESS);
         }
     }
 
-    private Map<String, Object> requestPayload(MsgPacket requestPacket, Map<String, Object> rawRequest) {
+    private UploadServiceRequest requestPayload(MsgPacket requestPacket, UploadServiceRequest rawRequest) {
         if (rawRequest == null) {
-            return new HashMap<>();
+            return new UploadServiceRequest();
         }
-        Object payload = rawRequest.get("payload");
-        if (Objects.equals(ActionType.CAPABILITY_INVOKE.name(), requestPacket.getMethodStr()) && payload instanceof Map) {
-            return (Map<String, Object>) payload;
+        if (Objects.equals(ActionType.CAPABILITY_INVOKE.name(), requestPacket.getMethodStr())
+                && rawRequest.getPayload() != null) {
+            return rawRequest.getPayload();
         }
         return rawRequest;
-    }
-
-    private List<String> fileInfoList(Object rawFileInfo) {
-        List<String> fileInfoList = new ArrayList<>();
-        if (rawFileInfo instanceof List) {
-            for (Object item : (List) rawFileInfo) {
-                if (item != null) {
-                    fileInfoList.add(item.toString());
-                }
-            }
-        } else if (rawFileInfo != null) {
-            fileInfoList.add(rawFileInfo.toString());
-        }
-        return fileInfoList;
     }
 
     private static List<UploadFile> getUploadFiles(List<String> fileInfoList) {
@@ -123,24 +106,26 @@ public class UploadService implements IPluginService {
             return response;
         }
         long startTime = System.currentTimeMillis();
-        Map<String, String> responseMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, Map.of("key", "syncRemoteType"), ActionType.GET_WEBSITE, Map.class);
-        if (Objects.isNull(responseMap) || Objects.isNull(responseMap.get("syncRemoteType"))) {
+        StaticPlusSyncConfig syncConfig = session.getResponseSync(ContentType.JSON, WebsiteKeyRequest.of("syncRemoteType,supportHttps"),
+                ActionType.GET_WEBSITE, StaticPlusSyncConfig.class);
+        if (Objects.isNull(syncConfig) || Objects.isNull(syncConfig.getSyncRemoteType())) {
             return convertByUploadFileList(uploadFileList);
         }
-        String syncType = responseMap.get("syncRemoteType");
-        Map<String, String> configMap = (Map<String, String>) session.getResponseSync(ContentType.JSON, Map.of("key", syncType), ActionType.GET_WEBSITE, Map.class);
-        if (Objects.isNull(configMap)) {
+        String syncType = syncConfig.getSyncRemoteType();
+        StaticPlusRemoteConfig remoteConfig = session.getResponseSync(ContentType.JSON, WebsiteKeyRequest.of(syncType),
+                ActionType.GET_WEBSITE, StaticPlusRemoteConfig.class);
+        if (Objects.isNull(remoteConfig)) {
             return convertByUploadFileList(uploadFileList);
         }
-        String gitConfig = configMap.get(syncType);
-        if (Objects.isNull(gitConfig) || gitConfig.trim().isEmpty()) {
+        String configJson = remoteConfig.config(syncType);
+        if (Objects.isNull(configJson) || configJson.trim().isEmpty()) {
             return convertByUploadFileList(uploadFileList);
         }
         FileManage bucketManageAPI = null;
-        if (Objects.equals("git", responseMap.get("syncRemoteType"))) {
-            bucketManageAPI = new GitFileManageImpl(configMap.get(syncType), new ArrayList<>(), session);
-        } else if (Objects.equals("s3", responseMap.get("syncRemoteType"))) {
-            bucketManageAPI = new S3FileManageImpl(configMap.get(syncType), new ArrayList<>(), session);
+        if (Objects.equals("git", syncType)) {
+            bucketManageAPI = new GitFileManageImpl(configJson, new ArrayList<>(), session);
+        } else if (Objects.equals("s3", syncType)) {
+            bucketManageAPI = new S3FileManageImpl(configJson, new ArrayList<>(), session);
         }
         if (Objects.isNull(bucketManageAPI)) {
             return convertByUploadFileList(uploadFileList);
@@ -149,8 +134,7 @@ public class UploadService implements IPluginService {
             for (UploadFile uploadFile : uploadFileList) {
                 UploadFileResponseEntry entry = new UploadFileResponseEntry();
                 try {
-                    boolean supportHttps = responseMap.get("supportHttps") != null && "on".equalsIgnoreCase(responseMap.get("supportHttps"));
-                    entry.setUrl(bucketManageAPI.create(uploadFile.getFile(), uploadFile.getFileKey(), true, supportHttps));
+                    entry.setUrl(bucketManageAPI.create(uploadFile.getFile(), uploadFile.getFileKey(), true, syncConfig.isSupportHttpsEnabled()));
                 } catch (Exception e) {
                     LOGGER.log(Level.SEVERE, "upload error " + e.getMessage());
                     entry.setUrl(uploadFile.getFileKey());

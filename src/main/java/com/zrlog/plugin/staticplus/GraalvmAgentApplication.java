@@ -5,11 +5,20 @@ import com.zrlog.plugin.common.IOUtil;
 import com.zrlog.plugin.common.LoggerUtil;
 import com.zrlog.plugin.common.PluginNativeImageUtils;
 import com.zrlog.plugin.common.vo.UploadFile;
+import com.zrlog.plugin.staticplus.config.StaticPlusHistoryConfig;
+import com.zrlog.plugin.staticplus.config.StaticPlusRemoteConfig;
+import com.zrlog.plugin.staticplus.config.StaticPlusSyncConfig;
+import com.zrlog.plugin.staticplus.config.StaticPlusUpdateRequest;
+import com.zrlog.plugin.staticplus.config.WebsiteKeyRequest;
+import com.zrlog.plugin.staticplus.controller.StaticPlusApiResponse;
 import com.zrlog.plugin.staticplus.controller.StaticPlusController;
+import com.zrlog.plugin.staticplus.controller.StaticPlusPageData;
+import com.zrlog.plugin.staticplus.service.UploadServiceRequest;
 import com.zrlog.plugin.staticplus.sync.GitFileManageImpl;
 import com.zrlog.plugin.staticplus.sync.vo.CreateFileInfoVO;
 import com.zrlog.plugin.staticplus.sync.vo.GitRemoteInfo;
 import com.zrlog.plugin.staticplus.sync.vo.S3RemoteInfo;
+import com.zrlog.plugin.staticplus.task.SyncHistoryRecord;
 import com.zrlog.plugin.type.RunType;
 
 import java.io.File;
@@ -45,7 +54,10 @@ public class GraalvmAgentApplication {
         }
         try {
             PluginNativeImageUtils.usedGsonObject();
-            PluginNativeImageUtils.gsonNativeAgentByClazz(Arrays.asList(CreateFileInfoVO.class, GitRemoteInfo.class, S3RemoteInfo.class));
+            PluginNativeImageUtils.gsonNativeAgentByClazz(Arrays.asList(CreateFileInfoVO.class, GitRemoteInfo.class, S3RemoteInfo.class,
+                    UploadServiceRequest.class, StaticPlusApiResponse.class, StaticPlusPageData.class, SyncHistoryRecord.class,
+                    StaticPlusSyncConfig.class, StaticPlusRemoteConfig.class, StaticPlusHistoryConfig.class, StaticPlusUpdateRequest.class,
+                    WebsiteKeyRequest.class));
         } catch (Exception e) {
             LOGGER.log(Level.WARNING, "Warm up static plus native image metadata failed", e);
         }

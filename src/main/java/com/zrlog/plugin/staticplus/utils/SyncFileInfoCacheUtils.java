@@ -6,6 +6,7 @@ import com.zrlog.plugin.common.SecurityUtils;
 import com.zrlog.plugin.common.model.BlogRunTime;
 import com.zrlog.plugin.common.model.TemplatePath;
 import com.zrlog.plugin.common.vo.UploadFile;
+import com.zrlog.plugin.staticplus.config.StaticPlusSyncConfig;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -19,8 +20,8 @@ public class SyncFileInfoCacheUtils {
     private static final Logger LOGGER = LoggerUtil.getLogger(SyncFileInfoCacheUtils.class);
 
 
-    public static List<UploadFile> cacheFiles(BlogRunTime blogRunTime, Map<String, String> responseMap, Map<String, String> fileInfoCacheMap) {
-        if (!"on".equals(responseMap.get("syncHtml"))) {
+    public static List<UploadFile> cacheFiles(BlogRunTime blogRunTime, StaticPlusSyncConfig syncConfig, Map<String, String> fileInfoCacheMap) {
+        if (!syncConfig.isSyncHtmlEnabled()) {
             return new ArrayList<>();
         }
         String cacheFolder = new File(blogRunTime.getPath()).getParent() + "/cache/zh_CN";
@@ -101,8 +102,8 @@ public class SyncFileInfoCacheUtils {
         return "";
     }
 
-    public static List<UploadFile> templateUploadFiles(BlogRunTime blogRunTime, Map<String, String> responseMap, TemplatePath templatePath, Map<String, String> fileInfoCacheMap) {
-        if (!"on".equals(responseMap.get("syncTemplate"))) {
+    public static List<UploadFile> templateUploadFiles(BlogRunTime blogRunTime, StaticPlusSyncConfig syncConfig, TemplatePath templatePath, Map<String, String> fileInfoCacheMap) {
+        if (!syncConfig.isSyncTemplateEnabled()) {
             return new ArrayList<>();
         }
         List<UploadFile> uploadFiles = new ArrayList<>();

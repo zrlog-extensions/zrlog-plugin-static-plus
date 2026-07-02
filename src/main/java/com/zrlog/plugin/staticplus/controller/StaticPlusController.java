@@ -3,16 +3,18 @@ package com.zrlog.plugin.staticplus.controller;
 import com.google.gson.Gson;
 import com.zrlog.plugin.IOSession;
 import com.zrlog.plugin.common.IdUtil;
-import com.zrlog.plugin.common.LoggerUtil;
 import com.zrlog.plugin.data.codec.ContentType;
 import com.zrlog.plugin.data.codec.HttpRequestInfo;
 import com.zrlog.plugin.data.codec.MsgPacket;
 import com.zrlog.plugin.data.codec.MsgPacketStatus;
+import com.zrlog.plugin.staticplus.config.StaticPlusHistoryConfig;
+import com.zrlog.plugin.staticplus.config.StaticPlusUpdateRequest;
+import com.zrlog.plugin.staticplus.config.WebsiteKeyRequest;
 import com.zrlog.plugin.type.ActionType;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Objects;
 
 public class StaticPlusController {
 
@@ -20,6 +22,7 @@ public class StaticPlusController {
     private final IOSession session;
     private final MsgPacket requestPacket;
     private final HttpRequestInfo requestInfo;
+    private final Gson gson = new Gson();
 
     public StaticPlusController(IOSession session, MsgPacket requestPacket, HttpRequestInfo requestInfo) {
         this.session = session;
@@ -29,46 +32,67 @@ public class StaticPlusController {
 
     public void githubEvent() {
         //handle action
-        Map<String, Object> map = new HashMap<>();
-        map.put("success", true);
-        session.sendMsg(new MsgPacket(map, ContentType.JSON, MsgPacketStatus.RESPONSE_SUCCESS, requestPacket.getMsgId(), requestPacket.getMethodStr()));
+        response(StaticPlusApiResponse.success());
     }
 
     public void update() {
-        session.sendMsg(new MsgPacket(requestInfo.simpleParam(), ContentType.JSON, MsgPacketStatus.SEND_REQUEST, IdUtil.getInt(), ActionType.SET_WEBSITE.name()), msgPacket -> {
-            Map<String, Object> map = new HashMap<>();
-            map.put("success", true);
-            session.sendMsg(new MsgPacket(map, ContentType.JSON, MsgPacketStatus.RESPONSE_SUCCESS, requestPacket.getMsgId(), requestPacket.getMethodStr()));
+        session.sendMsg(new MsgPacket(updateRequest(), ContentType.JSON, MsgPacketStatus.SEND_REQUEST, IdUtil.getInt(), ActionType.SET_WEBSITE.name()), msgPacket -> {
+            response(StaticPlusApiResponse.success());
             //更新缓存，可选
-            session.sendJsonMsg(new HashMap<>(), ActionType.REFRESH_CACHE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST);
+            session.sendJsonMsg(Collections.emptyMap(), ActionType.REFRESH_CACHE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST);
         });
     }
 
     public void history() {
-        Map<String, Object> keyMap = new HashMap<>();
-        keyMap.put("key", "syncHistory");
-        session.sendJsonMsg(keyMap, ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
-            Map map = new Gson().fromJson(msgPacket.getDataStr(), Map.class);
-            Map<String, Object> responseMap = new HashMap<>();
-            responseMap.put("success", true);
-            responseMap.put("data", map.get("syncHistory"));
-            session.sendMsg(new MsgPacket(responseMap, ContentType.JSON, MsgPacketStatus.RESPONSE_SUCCESS, requestPacket.getMsgId(), requestPacket.getMethodStr()));
+        session.sendJsonMsg(WebsiteKeyRequest.of("syncHistory"), ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
+            StaticPlusHistoryConfig historyConfig = historyConfig(msgPacket);
+            response(StaticPlusApiResponse.success(historyConfig.getSyncHistory()));
         });
     }
 
     public void index() {
-        Map<String, Object> keyMap = new HashMap<>();
-        keyMap.put("key", "syncTemplate,syncHtml,syncAttached,syncRemoteType,git,s3,syncHistory");
-        session.sendJsonMsg(keyMap, ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
-            Map map = new Gson().fromJson(msgPacket.getDataStr(), Map.class);
+        session.sendJsonMsg(WebsiteKeyRequest.of("syncTemplate,syncHtml,syncAttached,syncRemoteType,git,s3,syncHistory"),
+                ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
+            StaticPlusPageData pageData = pageData(msgPacket);
+            pageData.normalize();
+            pageData.setAdminColorPrimary(requestInfo.getAdminColorPrimary());
             Map<String, Object> data = new HashMap<>();
             data.put("theme", requestInfo.isDarkMode() ? "dark" : "light");
-            if (Objects.isNull(map.get("syncRemoteType"))) {
-                map.put("syncRemoteType", "git");
-            }
-            map.put("adminColorPrimary", requestInfo.getAdminColorPrimary());
-            data.put("data", new Gson().toJson(map));
+            data.put("data", gson.toJson(pageData));
             session.responseHtml("/templates/index", data, requestPacket.getMethodStr(), requestPacket.getMsgId());
         });
+    }
+
+    private StaticPlusPageData pageData(MsgPacket msgPacket) {
+        StaticPlusPageData pageData = gson.fromJson(msgPacket.getDataStr(), StaticPlusPageData.class);
+        return pageData == null ? new StaticPlusPageData() : pageData;
+    }
+
+    private StaticPlusHistoryConfig historyConfig(MsgPacket msgPacket) {
+        StaticPlusHistoryConfig historyConfig = gson.fromJson(msgPacket.getDataStr(), StaticPlusHistoryConfig.class);
+        return historyConfig == null ? new StaticPlusHistoryConfig() : historyConfig;
+    }
+
+    private StaticPlusUpdateRequest updateRequest() {
+        StaticPlusUpdateRequest request = new StaticPlusUpdateRequest();
+        request.setSyncTemplate(paramValue("syncTemplate"));
+        request.setSyncHtml(paramValue("syncHtml"));
+        request.setSyncAttached(paramValue("syncAttached"));
+        request.setSyncRemoteType(paramValue("syncRemoteType"));
+        request.setGit(paramValue("git"));
+        request.setS3(paramValue("s3"));
+        return request;
+    }
+
+    private String paramValue(String key) {
+        if (requestInfo.getParam() == null || requestInfo.getParam().get(key) == null || requestInfo.getParam().get(key).length == 0) {
+            return "";
+        }
+        return requestInfo.getParam().get(key)[0];
+    }
+
+    private void response(Object data) {
+        session.sendMsg(new MsgPacket(data, ContentType.JSON, MsgPacketStatus.RESPONSE_SUCCESS, requestPacket.getMsgId(),
+                requestPacket.getMethodStr()));
     }
 }
