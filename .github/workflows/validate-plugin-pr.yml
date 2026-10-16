@@ -1,0 +1,60 @@
+name: Validate plugin package
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    name: Build and inspect plugin package
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '11'
+          cache: maven
+      - name: Build plugin with generated release metadata
+        shell: bash
+        run: |
+          set -euo pipefail
+          bash ./mvnw -B -ntp clean
+          bash bin/build-info.sh "$RUNNER_TEMP/static-plus-package"
+          bash ./mvnw -B -ntp -PnodeBuild package assembly:single \
+            -DoutputDirectory="$RUNNER_TEMP/static-plus-package"
+      - name: Inspect packaged metadata
+        shell: python
+        run: |
+          import hashlib
+          import os
+          import zipfile
+          from pathlib import Path
+
+          output = Path(os.environ['RUNNER_TEMP']) / 'static-plus-package'
+          artifact = output / 'static-plus.jar'
+          generated = Path('target/generated-resources/plugin-info/plugin.properties').read_bytes()
+          with zipfile.ZipFile(artifact) as jar:
+              packaged = jar.read('plugin.properties')
+              assert packaged == generated, 'Packaged plugin metadata differs from generated metadata'
+              properties = dict(line.split('=', 1) for line in packaged.decode().splitlines() if '=' in line)
+              assert properties['shortName'] == 'static-plus'
+              assert not properties.get('dependentService', '').strip(), 'Unexpected required plugin service'
+              for service in ('UploadService', 'UploadToPrivateService', 'StaticPlusSyncService', 'StaticPlusRefreshCacheService'):
+                  assert 'com/zrlog/plugin/staticplus/service/' + service + '.class' in jar.namelist()
+          digest = hashlib.sha256(artifact.read_bytes()).hexdigest()
+          (output / 'static-plus.jar.sha256').write_text(digest + '  static-plus.jar\n')
+          print(packaged.decode())
+          print('SHA-256:', digest)
+      - uses: actions/upload-artifact@v6
+        with:
+          name: static-plus-pr-package
+          path: ${{ runner.temp }}/static-plus-package
+          retention-days: 14
