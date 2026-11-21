@@ -1,40 +1,40 @@
+import Input from "@zrlog/ui/antd/Input";
+import Switch from "@zrlog/ui/antd/Switch";
+import Typography from "@zrlog/ui/antd/Typography";
+import Table from "@zrlog/ui/antd/Table";
+import Tag from "@zrlog/ui/antd/Tag";
+import {useUiApp} from "@zrlog/ui/feedback";
+import SettingOutlined from "@zrlog/ui/icons/settings";
+import GlobalOutlined from "@zrlog/ui/icons/globe";
+import CloudServerOutlined from "@zrlog/ui/icons/cloud-upload";
+import InfoCircleOutlined from "@zrlog/ui/icons/info";
+import KeyOutlined from "@zrlog/ui/icons/key";
+import BranchesOutlined from "@zrlog/ui/icons/partition";
+import UserOutlined from "@zrlog/ui/icons/user";
+import MailOutlined from "@zrlog/ui/icons/message";
+import ApiOutlined from "@zrlog/ui/icons/api";
+import HistoryOutlined from "@zrlog/ui/icons/history";
+import ReloadOutlined from "@zrlog/ui/icons/refresh";
+import CheckCircleOutlined from "@zrlog/ui/icons/success";
+import CloseCircleOutlined from "@zrlog/ui/icons/error";
 import {
     Button,
     Card,
     Form,
     Grid,
-    Input,
     Select,
-    Switch,
     Space,
-    Typography,
     Divider,
-    message,
     Tooltip,
     Collapse,
-    Table,
-    Tag,
     Modal,
+    theme,
 } from "antd";
-import {
-    GithubOutlined,
-    SettingOutlined,
-    GlobalOutlined,
-    CloudServerOutlined,
-    InfoCircleOutlined,
-    KeyOutlined,
-    BranchesOutlined,
-    UserOutlined,
-    MailOutlined,
-    ApiOutlined,
-    HistoryOutlined,
-    ReloadOutlined,
-    CheckCircleOutlined,
-    CloseCircleOutlined,
-} from "@ant-design/icons";
+import {GithubOutlined} from "@ant-design/icons";
 import axios from "axios";
 import {FunctionComponent, useState, useEffect} from "react";
 import styled from "styled-components";
+import type {GlobalToken} from "antd";
 import {StaticPlusConfig} from "../index";
 
 const {Title, Paragraph, Text} = Typography;
@@ -91,7 +91,9 @@ interface FormValues {
 }
 
 /* Styled Components for Restrained & Professional Layout */
-const Shell = styled.div`
+const Shell = styled.div<{$token: GlobalToken}>`
+  --plugin-border: ${({$token}) => $token.colorBorderSecondary};
+  --plugin-text-secondary: ${({$token}) => $token.colorTextSecondary};
   width: 100%;
   max-width: 1200px;
   margin: 0 auto;
@@ -110,7 +112,7 @@ const Shell = styled.div`
 const Header = styled.div`
   margin-bottom: 20px;
   padding: 12px 0;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--plugin-border);
 
   h3 {
       margin: 0 !important;
@@ -119,10 +121,6 @@ const Header = styled.div`
   p {
       margin: 4px 0 0 0 !important;
       font-size: 13px !important;
-  }
-
-  body.dark & {
-      border-bottom-color: #303030;
   }
 `;
 
@@ -153,11 +151,8 @@ const FormScrollArea = styled.div`
       background: transparent;
   }
   &::-webkit-scrollbar-thumb {
-      background: rgba(0, 0, 0, 0.15);
+      background: var(--plugin-border);
       border-radius: 4px;
-  }
-  body.dark &::-webkit-scrollbar-thumb {
-      background: rgba(255, 255, 255, 0.2);
   }
 `;
 
@@ -174,13 +169,7 @@ const MainLayoutGrid = styled.div`
 `;
 
 const StyledCard = styled(Card)`
-  background: #ffffff !important;
-  border: 1px solid #f0f0f0 !important;
-  border-radius: 8px !important;
-  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.03) !important;
-
   .ant-card-head {
-      border-bottom: 1px solid #f0f0f0 !important;
       padding: 12px 16px !important;
       font-size: 14px;
       font-weight: 600;
@@ -193,16 +182,6 @@ const StyledCard = styled(Card)`
       }
       @media (max-width: 575px) {
           padding: 12px !important;
-      }
-  }
-
-  body.dark & {
-      background: #1f1f1f !important;
-      border-color: #303030 !important;
-      box-shadow: none !important;
-
-      .ant-card-head {
-          border-color: #303030 !important;
       }
   }
 `;
@@ -236,63 +215,13 @@ const SwitchLabel = styled(Text)`
 const SwitchDesc = styled(Paragraph)`
   margin: 2px 0 0 0 !important;
   font-size: 12px;
-  color: #8c8c8c;
+  color: var(--plugin-text-secondary);
   line-height: 1.4;
-
-  body.dark & {
-      color: #707070;
-  }
 `;
 
 const TooltipIcon = styled(InfoCircleOutlined)`
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--plugin-text-secondary);
   font-size: 12px;
-
-  body.dark & {
-      color: rgba(255, 255, 255, 0.45);
-  }
-`;
-
-const PrefixGlobal = styled(GlobalOutlined)`
-  color: rgba(0, 0, 0, 0.35);
-  body.dark & {
-      color: rgba(255, 255, 255, 0.35);
-  }
-`;
-
-const PrefixBranches = styled(BranchesOutlined)`
-  color: rgba(0, 0, 0, 0.35);
-  body.dark & {
-      color: rgba(255, 255, 255, 0.35);
-  }
-`;
-
-const PrefixUser = styled(UserOutlined)`
-  color: rgba(0, 0, 0, 0.35);
-  body.dark & {
-      color: rgba(255, 255, 255, 0.35);
-  }
-`;
-
-const PrefixKey = styled(KeyOutlined)`
-  color: rgba(0, 0, 0, 0.35);
-  body.dark & {
-      color: rgba(255, 255, 255, 0.35);
-  }
-`;
-
-const PrefixMail = styled(MailOutlined)`
-  color: rgba(0, 0, 0, 0.35);
-  body.dark & {
-      color: rgba(255, 255, 255, 0.35);
-  }
-`;
-
-const PrefixApi = styled(ApiOutlined)`
-  color: rgba(0, 0, 0, 0.35);
-  body.dark & {
-      color: rgba(255, 255, 255, 0.35);
-  }
 `;
 
 const Divider12 = styled(Divider)`
@@ -303,12 +232,12 @@ const Divider8 = styled(Divider)`
   margin: 8px 0 !important;
 `;
 
-const AdvancedCollapse = styled(Collapse)<{ primaryColor?: string }>`
+const AdvancedCollapse = styled(Collapse)<{$colorPrimary: string}>`
   margin-top: 12px !important;
 
   .ant-collapse-header {
       font-size: 13px !important;
-      color: ${props => props.primaryColor || "#1677ff"} !important;
+      color: ${({$colorPrimary}) => $colorPrimary} !important;
       font-weight: 500 !important;
       padding: 8px 0 !important;
   }
@@ -344,12 +273,13 @@ const syncRemoteTypeOptions = [
 ];
 
 const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
+    const {token} = theme.useToken();
     const screens = Grid.useBreakpoint();
     const isPhone = Boolean(screens.xs && !screens.sm);
     const isCompact = !screens.lg;
     const [loading, setLoading] = useState(false);
     const [form] = Form.useForm<FormValues>();
-    const [messageApi, contextHolder] = message.useMessage();
+    const {message: messageApi} = useUiApp();
 
     const [historyList, setHistoryList] = useState<any[]>([]);
     const [historyLoading, setHistoryLoading] = useState(false);
@@ -547,9 +477,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
     };
 
     return (
-        <Shell>
-            {contextHolder}
-
+        <Shell $token={token}>
             {/* Restrained and minimal header */}
             <Header>
                 <HeaderContent>
@@ -761,7 +689,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             ]}
                                         >
                                             <Input
-                                                prefix={<PrefixKey />}
+                                                prefix={<KeyOutlined />}
                                                 placeholder="AKIA... / 对象存储 Access Key"
                                             />
                                         </Form.Item>
@@ -777,7 +705,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             ]}
                                         >
                                             <Input.Password
-                                                prefix={<PrefixKey />}
+                                                prefix={<KeyOutlined />}
                                                 placeholder="对象存储 Secret Key"
                                             />
                                         </Form.Item>
@@ -787,7 +715,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             name="s3SessionToken"
                                         >
                                             <Input
-                                                prefix={<PrefixKey />}
+                                                prefix={<KeyOutlined />}
                                                 placeholder="（可选）临时凭据 Token"
                                             />
                                         </Form.Item>
@@ -797,7 +725,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             name="s3Endpoint"
                                         >
                                             <Input
-                                                prefix={<PrefixGlobal />}
+                                                prefix={<GlobalOutlined />}
                                                 placeholder="例如: https://s3.us-east-1.amazonaws.com"
                                             />
                                         </Form.Item>
@@ -807,7 +735,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             name="s3Region"
                                         >
                                             <Input
-                                                prefix={<PrefixGlobal />}
+                                                prefix={<GlobalOutlined />}
                                                 placeholder="例如: us-east-1（留空默认 us-east-1）"
                                             />
                                         </Form.Item>
@@ -823,7 +751,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             ]}
                                         >
                                             <Input
-                                                prefix={<PrefixGlobal />}
+                                                prefix={<GlobalOutlined />}
                                                 placeholder="例如: my-static-bucket"
                                             />
                                         </Form.Item>
@@ -833,7 +761,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             name="s3BaseUrl"
                                         >
                                             <Input
-                                                prefix={<PrefixGlobal />}
+                                                prefix={<GlobalOutlined />}
                                                 placeholder="例如: https://cdn.example.com"
                                             />
                                         </Form.Item>
@@ -875,7 +803,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             ]}
                                         >
                                             <Input
-                                                prefix={<PrefixGlobal />}
+                                                prefix={<GlobalOutlined />}
                                                 placeholder="https://github.com/username/repo.github.io.git"
                                             />
                                         </Form.Item>
@@ -886,7 +814,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             rules={[{required: currentRemoteType === "git", message: "请输入分支名称"}]}
                                         >
                                             <Input
-                                                prefix={<PrefixBranches />}
+                                                prefix={<BranchesOutlined />}
                                                 placeholder="例如: main"
                                             />
                                         </Form.Item>
@@ -897,7 +825,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             rules={[{required: currentRemoteType === "git", message: "请输入用户名"}]}
                                         >
                                             <Input
-                                                prefix={<PrefixUser />}
+                                                prefix={<UserOutlined />}
                                                 placeholder="输入 Git 服务用户名或邮箱"
                                             />
                                         </Form.Item>
@@ -914,7 +842,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             name="gitPassword"
                                         >
                                             <Input.Password
-                                                prefix={<PrefixKey />}
+                                                prefix={<KeyOutlined />}
                                                 placeholder="输入账户密码或 Access Token"
                                             />
                                         </Form.Item>
@@ -924,12 +852,12 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                             name="gitAccessBaseUrl"
                                         >
                                             <Input
-                                                prefix={<PrefixGlobal />}
+                                                prefix={<GlobalOutlined />}
                                                 placeholder="例如: https://username.github.io"
                                             />
                                         </Form.Item>
 
-                                        <AdvancedCollapse ghost primaryColor={config.adminColorPrimary}>
+                                        <AdvancedCollapse ghost $colorPrimary={token.colorPrimary}>
                                             <Collapse.Panel
                                                 header="高级配置 (代理与提交人)"
                                                 key="advanced"
@@ -943,7 +871,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                                         name="gitCommitterUsername"
                                                     >
                                                         <Input
-                                                            prefix={<PrefixUser />}
+                                                            prefix={<UserOutlined />}
                                                             placeholder="例如: ZrLog Bot"
                                                         />
                                                     </Form.Item>
@@ -959,7 +887,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                                         ]}
                                                     >
                                                         <Input
-                                                            prefix={<PrefixMail />}
+                                                            prefix={<MailOutlined />}
                                                             placeholder="例如: bot@example.com"
                                                         />
                                                     </Form.Item>
@@ -972,7 +900,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                                         name="proxyHttpHost"
                                                     >
                                                         <Input
-                                                            prefix={<PrefixGlobal />}
+                                                            prefix={<GlobalOutlined />}
                                                             placeholder="例如: 127.0.0.1"
                                                         />
                                                     </Form.Item>
@@ -988,7 +916,7 @@ const StaticPlusIndex: FunctionComponent<StaticPlusIndexProps> = ({config}) => {
                                                         ]}
                                                     >
                                                         <Input
-                                                            prefix={<PrefixApi />}
+                                                            prefix={<ApiOutlined />}
                                                             placeholder="例如: 7890"
                                                         />
                                                     </Form.Item>

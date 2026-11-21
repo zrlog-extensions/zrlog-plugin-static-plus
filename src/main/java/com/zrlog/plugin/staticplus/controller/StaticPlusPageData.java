@@ -1,6 +1,10 @@
 package com.zrlog.plugin.staticplus.controller;
 
+import com.zrlog.plugin.data.codec.PluginAppearance;
+
 public class StaticPlusPageData {
+
+    private PluginAppearance appearance;
 
     private String syncTemplate;
     private String syncHtml;
@@ -79,5 +83,8 @@ public class StaticPlusPageData {
 
     public void setAdminColorPrimary(String adminColorPrimary) {
         this.adminColorPrimary = adminColorPrimary;
+    }
+    public void setAppearance(PluginAppearance appearance) {
+        this.appearance = appearance;
     }
 }

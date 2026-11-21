@@ -7,6 +7,7 @@ import com.zrlog.plugin.data.codec.ContentType;
 import com.zrlog.plugin.data.codec.HttpRequestInfo;
 import com.zrlog.plugin.data.codec.MsgPacket;
 import com.zrlog.plugin.data.codec.MsgPacketStatus;
+import com.zrlog.plugin.data.codec.PluginAppearance;
 import com.zrlog.plugin.staticplus.config.StaticPlusHistoryConfig;
 import com.zrlog.plugin.staticplus.config.StaticPlusUpdateRequest;
 import com.zrlog.plugin.staticplus.config.WebsiteKeyRequest;
@@ -55,6 +56,7 @@ public class StaticPlusController {
                 ActionType.GET_WEBSITE.name(), IdUtil.getInt(), MsgPacketStatus.SEND_REQUEST, msgPacket -> {
             StaticPlusPageData pageData = pageData(msgPacket);
             pageData.normalize();
+            pageData.setAppearance(PluginAppearance.from(requestInfo));
             pageData.setAdminColorPrimary(requestInfo.getAdminColorPrimary());
             Map<String, Object> data = new HashMap<>();
             data.put("theme", requestInfo.isDarkMode() ? "dark" : "light");
