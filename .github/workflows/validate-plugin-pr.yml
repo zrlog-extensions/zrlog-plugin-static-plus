@@ -22,14 +22,16 @@ jobs:
           distribution: temurin
           java-version: '11'
           cache: maven
+      - name: Check out ZrLog build scripts
+        uses: actions/checkout@v4
+        with:
+          repository: zrlog/zrlog-build
+          ref: e8532208950a2c8902c1dec1b4e259f08af922e5
+          path: .zrlog-build
+          persist-credentials: false
       - name: Build plugin with generated release metadata
         shell: bash
-        run: |
-          set -euo pipefail
-          bash ./mvnw -B -ntp clean
-          bash bin/build-info.sh "$RUNNER_TEMP/static-plus-package"
-          bash ./mvnw -B -ntp -PnodeBuild package assembly:single \
-            -DoutputDirectory="$RUNNER_TEMP/static-plus-package"
+        run: bash .zrlog-build/scripts/plugin/build-jar.sh "$RUNNER_TEMP/static-plus-package" -B -ntp
       - name: Inspect packaged metadata
         shell: python
         run: |
